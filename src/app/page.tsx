@@ -1,6 +1,10 @@
 import Image from "next/image";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
+import { getMissingItems } from "@/lib/candidate/completeness";
+import { getCandidateProfile } from "@/lib/candidate/queries";
 import { signOut } from "./auth/actions";
 
 export default function Home() {
@@ -17,6 +21,10 @@ export default function Home() {
 
 async function Welcome() {
   const user = await getCurrentUser();
+  // Candidates can't be matched until their profile is complete.
+  if (user.type === "candidate" && getMissingItems(await getCandidateProfile(user.id)).length > 0) {
+    redirect("/profile");
+  }
 
   return (
     <>
@@ -38,6 +46,14 @@ async function Welcome() {
           <p className="text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>
         </div>
       </div>
+      {user.type === "candidate" && (
+        <Link
+          href="/profile"
+          className="flex h-11 w-full items-center justify-center rounded-full bg-zinc-950 font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+        >
+          Edit your profile
+        </Link>
+      )}
       <form action={signOut}>
         <button
           type="submit"

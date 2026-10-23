@@ -8,6 +8,27 @@
       "when": 1792782173185,
       "tag": "0000_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792786876213,
+      "tag": "0001_candidate_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792786923224,
+      "tag": "0002_candidate_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792787306410,
+      "tag": "0003_resume_storage_policies",
+      "breakpoints": true
     }
   ]
 }

@@ -15,7 +15,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const hasServiceRoleKey = Boolean(serviceRoleKey);
 
-function admin() {
+export function admin() {
   return createClient(url, serviceRoleKey!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
