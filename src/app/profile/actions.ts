@@ -159,11 +159,15 @@ export const savePrivacy = sectionAction(privacySchema, (tx, id, data) =>
   updateProfile(tx, id, { hiddenCompanyDomains: [...new Set(data.hiddenCompanyDomains)] }).then(() => {}),
 );
 
+// Resume import is hidden for now (see DECISIONS.md); the action stays callable by ID, so refuse it.
+const RESUME_IMPORT_ENABLED = false;
+
 // Uploads the resume, has Claude extract a profile from it, and fills the profile.
 // Lists (experience, skills, education, certifications, languages) are replaced;
 // text fields the candidate already filled in are kept.
 export async function importResume(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireCandidate();
+  if (!RESUME_IMPORT_ENABLED) return { status: "error", message: "Resume import is not available right now." };
   const file = formData.get("resume");
   if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Choose a PDF file." };
   if (file.type !== "application/pdf") return { status: "error", message: "Your resume must be a PDF." };
