@@ -30,7 +30,7 @@ async function Welcome() {
           <h1 className="text-4xl font-semibold tracking-tight text-balance">
             Welcome{user.fullName ? `, ${user.fullName}` : ""}
           </h1>
-          <p className="text-base text-muted-foreground">{user.email}</p>
+          <p className="text-base break-all text-muted-foreground">{user.email}</p>
         </div>
         {user.type === "candidate" && (
           <Button asChild size="lg">

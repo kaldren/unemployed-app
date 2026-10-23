@@ -94,14 +94,14 @@ export function SectionTabs({ groups, initial }: { groups: { label?: string; tab
                     className={cn(
                       "flex shrink-0 items-center gap-2.5 rounded-full px-4 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:rounded-lg lg:px-3",
                       selected
-                        ? "bg-primary font-medium text-primary-foreground lg:bg-accent lg:text-foreground"
+                        ? "bg-primary text-primary-foreground lg:bg-accent lg:text-foreground"
                         : "text-muted-foreground hover:text-foreground max-lg:bg-muted lg:hover:bg-muted",
                     )}
                   >
                     <span className="min-w-0 flex-1 whitespace-nowrap lg:truncate">{tab.label}</span>
                     <StatusIcon status={tab.status} selected={selected} />
                     {dirty[tab.id] && (
-                      <span className={cn("size-2 shrink-0 rounded-full bg-warning", selected && "max-lg:bg-current")} title="Changes to save">
+                      <span className={cn("size-2 shrink-0 rounded-full border-2 border-warning", selected && "max-lg:border-current")} title="Changes to save">
                         <span className="sr-only">Changes to save</span>
                       </span>
                     )}
@@ -133,7 +133,12 @@ export function SectionTabs({ groups, initial }: { groups: { label?: string; tab
 }
 
 // Quiet by default: a check when done, a dot when something is still needed, nothing when optional.
+// Always a fixed-width slot, so the unsaved-changes ring lines up across rows.
 function StatusIcon({ status, selected }: { status: TabStatus; selected: boolean }) {
+  return <span className="flex size-4 shrink-0 items-center justify-center">{statusMark(status, selected)}</span>;
+}
+
+function statusMark(status: TabStatus, selected: boolean) {
   if (status === "done") {
     return (
       <svg viewBox="0 0 16 16" aria-label="Complete" role="img" className={cn("size-4 shrink-0 text-success", selected && "max-lg:text-current")}>

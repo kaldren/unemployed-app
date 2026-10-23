@@ -190,7 +190,7 @@ async function ProfileEditor() {
 
   return (
     <>
-      <AppHeader user={user} />
+      <AppHeader user={user} current="profile" />
       <main className="flex flex-1 justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-5xl flex-col gap-10">
           <header className="flex flex-col gap-4">
