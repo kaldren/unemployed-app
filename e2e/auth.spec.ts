@@ -50,6 +50,16 @@ test.describe("signed in", () => {
     await expect(page).toHaveURL("/login?next=%2F");
   });
 
+  test("header navigates between home and profile", async ({ page, context }) => {
+    await seedCompleteCandidate(await signIn(context));
+
+    await page.goto("/");
+    await page.getByRole("link", { name: "Profile", exact: true }).click();
+    await expect(page).toHaveURL("/profile");
+    await page.getByRole("link", { name: "Unemployed" }).click();
+    await expect(page).toHaveURL("/");
+  });
+
   test("session without a profile is cleared", async ({ page, context }) => {
     await signIn(context, { withProfile: false });
 

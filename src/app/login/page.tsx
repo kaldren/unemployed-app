@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Alert } from "@/components/ui/alert";
-import { Card } from "@/components/ui/card";
 import { safeNextPath } from "@/lib/auth";
 import { GoogleButton } from "./google-button";
 
@@ -17,10 +16,10 @@ const ERROR_MESSAGES = {
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4">
-      <Card className="w-full max-w-sm gap-6 p-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+    <main className="flex flex-1 items-center justify-center px-4 pb-16">
+      <div className="flex w-full max-w-sm flex-col gap-10 text-center">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-4xl font-semibold tracking-tight">Unemployed</h1>
           <p className="text-base text-muted-foreground">
             Find jobs where both sides say yes.
           </p>
@@ -29,7 +28,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <Suspense fallback={<GoogleButton />}>
           <SignInOptions searchParams={searchParams} />
         </Suspense>
-      </Card>
+      </div>
     </main>
   );
 }

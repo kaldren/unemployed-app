@@ -1,23 +1,17 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
-import { signOut } from "./auth/actions";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 items-center justify-center px-4">
-      <Card className="w-full max-w-sm gap-6 p-8">
-        <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
-          <Welcome />
-        </Suspense>
-      </Card>
-    </main>
+    <Suspense fallback={<p className="m-auto text-muted-foreground">Loading…</p>}>
+      <Welcome />
+    </Suspense>
   );
 }
 
@@ -30,34 +24,20 @@ async function Welcome() {
 
   return (
     <>
-      <div className="flex items-center gap-4">
-        {user.avatarUrl && (
-          <Image
-            src={user.avatarUrl}
-            alt=""
-            width={48}
-            height={48}
-            unoptimized
-            className="h-12 w-12 rounded-full"
-          />
-        )}
-        <div className="flex flex-col">
-          <h1 className="text-xl font-semibold">
+      <AppHeader user={user} />
+      <main className="flex flex-1 flex-col items-center justify-center gap-8 px-4 pb-16 text-center">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-4xl font-semibold tracking-tight text-balance">
             Welcome{user.fullName ? `, ${user.fullName}` : ""}
           </h1>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+          <p className="text-base break-all text-muted-foreground">{user.email}</p>
         </div>
-      </div>
-      {user.type === "candidate" && (
-        <Button asChild size="lg" className="w-full">
-          <Link href="/profile">Edit your profile</Link>
-        </Button>
-      )}
-      <form action={signOut}>
-        <Button type="submit" variant="outline" size="lg" className="w-full">
-          Sign out
-        </Button>
-      </form>
+        {user.type === "candidate" && (
+          <Button asChild size="lg">
+            <Link href="/profile">Edit your profile</Link>
+          </Button>
+        )}
+      </main>
     </>
   );
 }

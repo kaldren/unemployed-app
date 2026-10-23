@@ -60,7 +60,7 @@ export function SectionForm({
     <Card asChild>
       <section id={id} aria-labelledby={`${id}-title`}>
         <form action={formAction} className="flex flex-col gap-6">
-          <CardHeader className="border-b">
+          <CardHeader>
             <CardTitle asChild>
               <h2 id={`${id}-title`}>{title}</h2>
             </CardTitle>
@@ -70,7 +70,7 @@ export function SectionForm({
           <CardContent className="flex flex-col gap-5">
             <FieldErrors.Provider value={fieldErrors}>{children}</FieldErrors.Provider>
           </CardContent>
-          <CardFooter className="flex-wrap justify-end gap-3">
+          <CardFooter className="flex-wrap justify-end gap-3 border-t-0 bg-transparent pt-2 pb-6">
             <p aria-live="polite" className="mr-auto text-sm">
               {state.status === "saved" && !dirty && !pending && <span className="text-success">Saved</span>}
               {dirty && !pending && state.status !== "error" && (

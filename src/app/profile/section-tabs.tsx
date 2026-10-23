@@ -9,8 +9,6 @@ export type Tab = {
   id: string;
   label: string;
   status: TabStatus;
-  // Short secondary line, e.g. "3 jobs".
-  meta?: string;
   content: ReactNode;
 };
 
@@ -26,7 +24,7 @@ export function useReportDirty(id: string, dirty: boolean) {
 
 // Vertical tabs on large screens, a scrolling strip on small ones. Every panel stays mounted
 // so unsaved edits survive switching sections.
-export function SectionTabs({ groups, initial }: { groups: { label: string; tabs: Tab[] }[]; initial: string }) {
+export function SectionTabs({ groups, initial }: { groups: { label?: string; tabs: Tab[] }[]; initial: string }) {
   const [active, setActive] = useState(initial);
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -70,13 +68,13 @@ export function SectionTabs({ groups, initial }: { groups: { label: string; tabs
           role="tablist"
           aria-orientation="vertical"
           onKeyDown={onKeyDown}
-          className="flex gap-2 overflow-x-auto px-4 pb-1 lg:flex-col lg:gap-5 lg:overflow-visible lg:p-0"
+          className="flex gap-2 overflow-x-auto px-4 pb-1 lg:flex-col lg:gap-6 lg:overflow-visible lg:p-0"
         >
-          {groups.map((group) => (
-            <div key={group.label} className="flex shrink-0 gap-2 lg:flex-col lg:gap-1">
-              <p className="hidden px-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:block">
-                {group.label}
-              </p>
+          {groups.map((group, i) => (
+            <div key={i} className="flex shrink-0 gap-2 lg:flex-col lg:gap-0.5">
+              {group.label && (
+                <p className="hidden px-3 pb-1 text-xs text-muted-foreground lg:block">{group.label}</p>
+              )}
               {group.tabs.map((tab) => {
                 const selected = tab.id === active;
                 return (
@@ -94,21 +92,16 @@ export function SectionTabs({ groups, initial }: { groups: { label: string; tabs
                     tabIndex={selected ? 0 : -1}
                     onClick={() => select(tab.id)}
                     className={cn(
-                      "flex shrink-0 items-center gap-3 rounded-full border px-3 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:rounded-xl lg:border-0",
+                      "flex shrink-0 items-center gap-2.5 rounded-full px-4 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:rounded-lg lg:px-3",
                       selected
-                        ? "max-lg:border-primary max-lg:bg-primary max-lg:text-primary-foreground lg:bg-card lg:shadow-sm lg:ring-1 lg:ring-border"
-                        : "text-muted-foreground hover:text-foreground max-lg:bg-card lg:hover:bg-accent",
+                        ? "bg-primary text-primary-foreground lg:bg-accent lg:text-foreground"
+                        : "text-muted-foreground hover:text-foreground max-lg:bg-muted lg:hover:bg-muted",
                     )}
                   >
+                    <span className="min-w-0 flex-1 whitespace-nowrap lg:truncate">{tab.label}</span>
                     <StatusIcon status={tab.status} selected={selected} />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="whitespace-nowrap font-medium lg:truncate">{tab.label}</span>
-                      {tab.meta && (
-                        <span className="hidden truncate text-xs text-muted-foreground lg:block">{tab.meta}</span>
-                      )}
-                    </span>
                     {dirty[tab.id] && (
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-warning" title="Changes to save">
+                      <span className={cn("size-2 shrink-0 rounded-full border-2 border-warning", selected && "max-lg:border-current")} title="Changes to save">
                         <span className="sr-only">Changes to save</span>
                       </span>
                     )}
@@ -139,29 +132,24 @@ export function SectionTabs({ groups, initial }: { groups: { label: string; tabs
   );
 }
 
+// Quiet by default: a check when done, a dot when something is still needed, nothing when optional.
+// Always a fixed-width slot, so the unsaved-changes ring lines up across rows.
 function StatusIcon({ status, selected }: { status: TabStatus; selected: boolean }) {
+  return <span className="flex size-4 shrink-0 items-center justify-center">{statusMark(status, selected)}</span>;
+}
+
+function statusMark(status: TabStatus, selected: boolean) {
   if (status === "done") {
     return (
-      <svg viewBox="0 0 20 20" aria-label="Complete" role="img" className="h-5 w-5 shrink-0 text-success">
-        <circle cx="10" cy="10" r="9" fill="currentColor" />
-        <path d="M6 10.5l2.5 2.5L14 7.5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <svg viewBox="0 0 16 16" aria-label="Complete" role="img" className={cn("size-4 shrink-0 text-success", selected && "max-lg:text-current")}>
+        <path d="M3.5 8.5l3 3 6-6.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }
   if (status === "todo") {
     return (
-      <svg viewBox="0 0 20 20" aria-label="Needs attention" role="img" className="h-5 w-5 shrink-0 text-warning">
-        <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2.6" />
-      </svg>
+      <span role="img" aria-label="Needs attention" className={cn("size-2 shrink-0 rounded-full bg-brand", selected && "max-lg:bg-current")} />
     );
   }
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      aria-hidden
-      className={cn("h-5 w-5 shrink-0", selected ? "text-current opacity-40" : "text-border")}
-    >
-      <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
+  return null;
 }
