@@ -11,21 +11,20 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox as CheckboxControl } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/candidate/schemas";
 import { useReportDirty } from "./section-tabs";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
 const FieldErrors = createContext<Record<string, string>>({});
-
-export const inputClass =
-  "h-10 w-full rounded-lg border border-black/[.12] bg-white px-3 text-sm text-zinc-950 outline-none transition-colors focus:border-zinc-950 aria-invalid:border-red-600 dark:border-white/[.18] dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-50";
-
-export const secondaryButton =
-  "h-9 rounded-full border border-black/[.12] px-4 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-white/[.18] dark:text-zinc-50 dark:hover:bg-zinc-900";
-
-const primaryButton =
-  "h-10 rounded-full bg-zinc-950 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200";
 
 // A profile section: a card with its own form that posts `data` as JSON to `action`.
 export function SectionForm({
@@ -58,42 +57,39 @@ export function SectionForm({
   const fieldErrors = state.status === "error" ? (state.fieldErrors ?? {}) : {};
 
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/[.04] dark:bg-zinc-950 dark:ring-white/[.08]"
-    >
-      <form action={formAction}>
-        <div className="flex flex-col gap-1 border-b border-black/[.06] px-6 py-5 dark:border-white/[.08]">
-          <h2 id={`${id}-title`} className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-            {title}
-          </h2>
-          {description && <p className="text-sm text-zinc-600 dark:text-zinc-400">{description}</p>}
-        </div>
-        <input type="hidden" name="data" value={json} />
-        <div className="flex flex-col gap-5 px-6 py-6">
-          <FieldErrors.Provider value={fieldErrors}>{children}</FieldErrors.Provider>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-black/[.06] bg-zinc-50/60 px-6 py-4 dark:border-white/[.08] dark:bg-zinc-900/40">
-          <p aria-live="polite" className="mr-auto text-sm">
-            {state.status === "saved" && !dirty && !pending && (
-              <span className="text-green-700 dark:text-green-400">Saved</span>
-            )}
-            {dirty && !pending && state.status !== "error" && (
-              <span className="text-zinc-500 dark:text-zinc-400">Changes to save</span>
-            )}
-            {state.status === "error" && !pending && (
-              <span role="alert" className="text-red-700 dark:text-red-400">
-                {state.message}
-              </span>
-            )}
-          </p>
-          <button type="submit" disabled={pending} className={primaryButton}>
-            {pending ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </form>
-    </section>
+    <Card asChild>
+      <section id={id} aria-labelledby={`${id}-title`}>
+        <form action={formAction} className="flex flex-col gap-6">
+          <CardHeader className="border-b">
+            <CardTitle asChild>
+              <h2 id={`${id}-title`}>{title}</h2>
+            </CardTitle>
+            {description && <CardDescription>{description}</CardDescription>}
+          </CardHeader>
+          <input type="hidden" name="data" value={json} />
+          <CardContent className="flex flex-col gap-5">
+            <FieldErrors.Provider value={fieldErrors}>{children}</FieldErrors.Provider>
+          </CardContent>
+          <CardFooter className="flex-wrap justify-end gap-3">
+            <p aria-live="polite" className="mr-auto text-sm">
+              {state.status === "saved" && !dirty && !pending && <span className="text-success">Saved</span>}
+              {dirty && !pending && state.status !== "error" && (
+                <span className="text-muted-foreground">Changes to save</span>
+              )}
+              {state.status === "error" && !pending && (
+                <span role="alert" className="text-destructive">
+                  {state.message}
+                </span>
+              )}
+            </p>
+            {/* Nothing to send until something changes. */}
+            <Button type="submit" disabled={pending || !dirty}>
+              {pending ? "Saving…" : "Save"}
+            </Button>
+          </CardFooter>
+        </form>
+      </section>
+    </Card>
   );
 }
 
@@ -117,17 +113,15 @@ export function Field({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-        {label}
-      </label>
+      <Label htmlFor={id}>{label}</Label>
       {children({ id, "aria-invalid": Boolean(error), "aria-describedby": describedBy })}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-red-700 dark:text-red-400">
+        <p id={`${id}-error`} className="text-sm text-destructive">
           {error}
         </p>
       ) : (
         hint && (
-          <p id={`${id}-hint`} className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p id={`${id}-hint`} className="text-xs text-muted-foreground">
             {hint}
           </p>
         )
@@ -153,13 +147,7 @@ export function TextInput({
   return (
     <Field label={label} name={name} hint={hint}>
       {(a11y) => (
-        <input
-          {...a11y}
-          {...props}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={inputClass}
-        />
+        <Input {...a11y} {...props} value={value} onChange={(e) => onChange(e.target.value)} />
       )}
     </Field>
   );
@@ -182,13 +170,7 @@ export function TextArea({
   return (
     <Field label={label} name={name} hint={hint}>
       {(a11y) => (
-        <textarea
-          {...a11y}
-          {...props}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`${inputClass} h-auto min-h-28 py-2`}
-        />
+        <Textarea {...a11y} {...props} value={value} onChange={(e) => onChange(e.target.value)} />
       )}
     </Field>
   );
@@ -211,19 +193,19 @@ export function Select({
   onChange: (value: string) => void;
   options: Record<string, string> | [string, string][];
   placeholder?: string | null;
-} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange" | "name">) {
+} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange" | "name" | "size">) {
   const entries = Array.isArray(options) ? options : Object.entries(options);
   return (
     <Field label={label} name={name} hint={hint}>
       {(a11y) => (
-        <select {...a11y} {...props} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
-          {placeholder !== null && <option value="">{placeholder}</option>}
+        <NativeSelect {...a11y} {...props} value={value} onChange={(e) => onChange(e.target.value)}>
+          {placeholder !== null && <NativeSelectOption value="">{placeholder}</NativeSelectOption>}
           {entries.map(([key, text]) => (
-            <option key={key} value={key}>
+            <NativeSelectOption key={key} value={key}>
               {text}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
+        </NativeSelect>
       )}
     </Field>
   );
@@ -238,16 +220,14 @@ export function Checkbox({
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
+  const id = useId();
   return (
-    <label className="flex items-center gap-2 text-sm text-zinc-900 dark:text-zinc-100">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 accent-zinc-950 dark:accent-zinc-50"
-      />
-      {label}
-    </label>
+    <div className="flex items-center gap-2">
+      <CheckboxControl id={id} checked={checked} onCheckedChange={(on) => onChange(on === true)} />
+      <Label htmlFor={id} className="font-normal">
+        {label}
+      </Label>
+    </div>
   );
 }
 
@@ -267,7 +247,7 @@ export function CheckboxGroup<K extends string>({
   const error = useFieldError(name);
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1.5 text-sm font-medium text-zinc-900 dark:text-zinc-100">{label}</legend>
+      <legend className="mb-1.5 text-sm font-medium">{label}</legend>
       <div className="flex flex-wrap gap-x-5 gap-y-2">
         {(Object.entries(options) as [K, string][]).map(([key, text]) => (
           <Checkbox
@@ -278,7 +258,7 @@ export function CheckboxGroup<K extends string>({
           />
         ))}
       </div>
-      {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </fieldset>
   );
 }
@@ -321,25 +301,26 @@ export function TagInput({
           {value.length > 0 && (
             <ul className="flex flex-wrap gap-2" aria-label={`Selected ${label.toLowerCase()}`}>
               {value.map((tag) => (
-                <li
-                  key={tag}
-                  className="flex items-center gap-1 rounded-full bg-zinc-100 py-1 pl-3 pr-1 text-sm text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => onChange(value.filter((v) => v !== tag))}
-                    aria-label={`Remove ${tag}`}
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900 dark:hover:bg-zinc-700 dark:hover:text-zinc-50"
-                  >
-                    ×
-                  </button>
-                </li>
+                <Badge asChild key={tag} variant="secondary" className="h-8 gap-1 pr-1 pl-3 text-sm font-normal">
+                  <li>
+                    {tag}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => onChange(value.filter((v) => v !== tag))}
+                      aria-label={`Remove ${tag}`}
+                      className="text-muted-foreground hover:bg-accent"
+                    >
+                      ×
+                    </Button>
+                  </li>
+                </Badge>
               ))}
             </ul>
           )}
           <div className="flex gap-2">
-            <input
+            <Input
               {...a11y}
               list={listId}
               value={draft}
@@ -362,11 +343,10 @@ export function TagInput({
                   add(draft);
                 }
               }}
-              className={inputClass}
             />
-            <button type="button" onClick={() => add(draft)} disabled={!draft.trim() || full} className={secondaryButton}>
+            <Button type="button" variant="outline" onClick={() => add(draft)} disabled={!draft.trim() || full}>
               Add
-            </button>
+            </Button>
           </div>
           <datalist id={listId}>
             {suggestions.map((s) => (
@@ -399,23 +379,24 @@ export function ListEditor<T>({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {items.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">{empty}</p>}
+      {items.length === 0 && <p className="text-sm text-muted-foreground">{empty}</p>}
       {items.map((item, i) => (
-        <div key={i} className="flex flex-col gap-4 rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
+        <div key={i} className="flex flex-col gap-4 rounded-xl border p-4">
           {renderItem(item, (patch) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it))), i)}
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={() => onChange(items.filter((_, j) => j !== i))}
-            className="self-start text-sm font-medium text-red-700 hover:underline dark:text-red-400"
+            className="h-auto self-start px-0 text-destructive"
           >
             Remove
-          </button>
+          </Button>
         </div>
       ))}
       {items.length < max && (
-        <button type="button" onClick={() => onChange([...items, newItem()])} className={`${secondaryButton} self-start`}>
+        <Button type="button" variant="outline" onClick={() => onChange([...items, newItem()])} className="self-start">
           {addLabel}
-        </button>
+        </Button>
       )}
     </div>
   );

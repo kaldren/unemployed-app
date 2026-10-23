@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { Card } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { COMPLETENESS_STEPS, MIN_SKILLS, getMissingItems } from "@/lib/candidate/completeness";
@@ -25,9 +26,9 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <main className="flex flex-1 justify-center bg-zinc-50 px-4 py-10 font-sans dark:bg-black">
+    <main className="flex flex-1 justify-center px-4 py-10">
       <div className="flex w-full max-w-5xl flex-col gap-8">
-        <Suspense fallback={<p className="text-zinc-600 dark:text-zinc-400">Loading…</p>}>
+        <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
           <ProfileEditor />
         </Suspense>
       </div>
@@ -207,35 +208,35 @@ async function ProfileEditor() {
       <header className="flex flex-col gap-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Your profile</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <h1 className="text-2xl font-semibold tracking-tight">Your profile</h1>
+            <p className="text-sm text-muted-foreground">
               {missing.length === 0 ? "Your profile is complete" : "Complete your profile to get matches"}
             </p>
           </div>
-          <Link href="/" className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400">
+          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline">
             Home
           </Link>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-black/[.04] dark:bg-zinc-950 dark:ring-white/[.08]">
+        <Card size="sm" className="flex-row items-center gap-4 px-5">
           <div
             role="progressbar"
             aria-label="Profile completeness"
             aria-valuemin={0}
             aria-valuemax={COMPLETENESS_STEPS}
             aria-valuenow={done}
-            className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
+            className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
           >
             <div
-              className={`h-full rounded-full transition-[width] ${missing.length === 0 ? "bg-green-600 dark:bg-green-500" : "bg-zinc-950 dark:bg-zinc-50"}`}
+              className={`h-full rounded-full transition-[width] ${missing.length === 0 ? "bg-success" : "bg-brand"}`}
               style={{ width: `${(done / COMPLETENESS_STEPS) * 100}%` }}
             />
           </div>
-          <span className="shrink-0 text-sm font-medium tabular-nums text-zinc-950 dark:text-zinc-50">
+          <span className="shrink-0 text-sm font-medium tabular-nums">
             {done}/{COMPLETENESS_STEPS}
           </span>
-        </div>
+        </Card>
         {missing.length > 0 && (
-          <p className="-mt-2 text-sm text-zinc-600 dark:text-zinc-400">Still missing: {missing.join(", ")}.</p>
+          <p className="-mt-2 text-sm text-muted-foreground">Still missing: {missing.join(", ")}.</p>
         )}
       </header>
 

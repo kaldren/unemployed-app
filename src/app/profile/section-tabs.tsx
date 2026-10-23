@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 export type TabStatus = "done" | "todo" | "optional";
@@ -73,7 +74,7 @@ export function SectionTabs({ groups, initial }: { groups: { label: string; tabs
         >
           {groups.map((group) => (
             <div key={group.label} className="flex shrink-0 gap-2 lg:flex-col lg:gap-1">
-              <p className="hidden px-3 pb-1 text-xs font-medium uppercase tracking-wide text-zinc-500 lg:block dark:text-zinc-500">
+              <p className="hidden px-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground lg:block">
                 {group.label}
               </p>
               {group.tabs.map((tab) => {
@@ -92,21 +93,22 @@ export function SectionTabs({ groups, initial }: { groups: { label: string; tabs
                     aria-controls={`panel-${tab.id}`}
                     tabIndex={selected ? 0 : -1}
                     onClick={() => select(tab.id)}
-                    className={`flex shrink-0 items-center gap-3 rounded-full border px-3 py-2 text-left text-sm transition-colors lg:rounded-xl lg:border-0 ${
+                    className={cn(
+                      "flex shrink-0 items-center gap-3 rounded-full border px-3 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:rounded-xl lg:border-0",
                       selected
-                        ? "max-lg:border-zinc-950 max-lg:bg-zinc-950 max-lg:text-white max-lg:dark:border-zinc-50 max-lg:dark:bg-zinc-50 max-lg:dark:text-zinc-950 lg:bg-white lg:text-zinc-950 lg:shadow-sm lg:ring-1 lg:ring-black/[.04] lg:dark:bg-zinc-900 lg:dark:text-zinc-50 lg:dark:ring-white/[.08]"
-                        : "text-zinc-700 hover:text-zinc-950 max-lg:border-black/[.08] max-lg:bg-white max-lg:dark:border-white/[.12] max-lg:dark:bg-zinc-950 lg:hover:bg-black/[.04] dark:text-zinc-300 dark:hover:text-zinc-50 lg:dark:hover:bg-white/[.06]"
-                    }`}
+                        ? "max-lg:border-primary max-lg:bg-primary max-lg:text-primary-foreground lg:bg-card lg:shadow-sm lg:ring-1 lg:ring-border"
+                        : "text-muted-foreground hover:text-foreground max-lg:bg-card lg:hover:bg-accent",
+                    )}
                   >
                     <StatusIcon status={tab.status} selected={selected} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="whitespace-nowrap font-medium lg:truncate">{tab.label}</span>
                       {tab.meta && (
-                        <span className="hidden truncate text-xs text-zinc-500 lg:block dark:text-zinc-400">{tab.meta}</span>
+                        <span className="hidden truncate text-xs text-muted-foreground lg:block">{tab.meta}</span>
                       )}
                     </span>
                     {dirty[tab.id] && (
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Changes to save">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-warning" title="Changes to save">
                         <span className="sr-only">Changes to save</span>
                       </span>
                     )}
@@ -140,7 +142,7 @@ export function SectionTabs({ groups, initial }: { groups: { label: string; tabs
 function StatusIcon({ status, selected }: { status: TabStatus; selected: boolean }) {
   if (status === "done") {
     return (
-      <svg viewBox="0 0 20 20" aria-label="Complete" role="img" className="h-5 w-5 shrink-0 text-green-600 dark:text-green-500">
+      <svg viewBox="0 0 20 20" aria-label="Complete" role="img" className="h-5 w-5 shrink-0 text-success">
         <circle cx="10" cy="10" r="9" fill="currentColor" />
         <path d="M6 10.5l2.5 2.5L14 7.5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -148,7 +150,7 @@ function StatusIcon({ status, selected }: { status: TabStatus; selected: boolean
   }
   if (status === "todo") {
     return (
-      <svg viewBox="0 0 20 20" aria-label="Needs attention" role="img" className="h-5 w-5 shrink-0 text-amber-500">
+      <svg viewBox="0 0 20 20" aria-label="Needs attention" role="img" className="h-5 w-5 shrink-0 text-warning">
         <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2.6" />
       </svg>
     );
@@ -157,7 +159,7 @@ function StatusIcon({ status, selected }: { status: TabStatus; selected: boolean
     <svg
       viewBox="0 0 20 20"
       aria-hidden
-      className={`h-5 w-5 shrink-0 ${selected ? "text-current opacity-40" : "text-zinc-300 dark:text-zinc-700"}`}
+      className={cn("h-5 w-5 shrink-0", selected ? "text-current opacity-40" : "text-border")}
     >
       <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
     </svg>

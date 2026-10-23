@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { COUNTRIES, LANGUAGES } from "@/lib/candidate/locales";
 import {
   ABOUT_MAX,
@@ -40,7 +42,6 @@ import {
   TagInput,
   TextArea,
   TextInput,
-  inputClass,
   useFieldError,
 } from "./ui";
 
@@ -343,7 +344,7 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
       {items.length > 0 && (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-zinc-600 dark:text-zinc-400">
+            <tr className="text-left text-muted-foreground">
               <th className="pb-2 font-medium">Skill</th>
               <th className="pb-2 font-medium">Level</th>
               <th className="w-24 pb-2 font-medium">Years</th>
@@ -353,25 +354,24 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
             {items.map((s, i) => {
               const update = (patch: Partial<SkillState>) => setItems(items.map((it, j) => (j === i ? { ...it, ...patch } : it)));
               return (
-                <tr key={s.name} className="border-t border-black/[.06] dark:border-white/[.08]">
-                  <td className="py-2 pr-3 text-zinc-950 dark:text-zinc-50">{s.name}</td>
+                <tr key={s.name} className="border-t border-border">
+                  <td className="py-2 pr-3 font-medium">{s.name}</td>
                   <td className="py-2 pr-3">
-                    <select
+                    <NativeSelect
                       aria-label={`${s.name} level`}
                       value={s.level}
                       onChange={(e) => update({ level: e.target.value })}
-                      className={inputClass}
                     >
-                      <option value="">—</option>
+                      <NativeSelectOption value="">—</NativeSelectOption>
                       {Object.entries(SKILL_LEVELS).map(([k, label]) => (
-                        <option key={k} value={k}>
+                        <NativeSelectOption key={k} value={k}>
                           {label}
-                        </option>
+                        </NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </td>
                   <td className="py-2">
-                    <input
+                    <Input
                       aria-label={`${s.name} years`}
                       type="number"
                       min={0}
@@ -379,7 +379,6 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
                       inputMode="numeric"
                       value={s.years}
                       onChange={(e) => update({ years: e.target.value })}
-                      className={inputClass}
                     />
                   </td>
                 </tr>
@@ -513,5 +512,5 @@ export function PrivacySection({ initial, suggestions }: { initial: string[]; su
 
 function FormError({ name }: { name: string }) {
   const error = useFieldError(name);
-  return error ? <p className="text-sm text-red-700 dark:text-red-400">{error}</p> : null;
+  return error ? <p className="text-sm text-destructive">{error}</p> : null;
 }
