@@ -29,4 +29,8 @@ follows `specs/template.md`.
   status `in-progress`.
 - While coding: only build what the spec says; tick tasks and acceptance criteria as done.
   If the plan changes, update the spec first.
+- Do not put any code in the spec itself; the spec's only job is to describe the feature and its requirements. Your job is to implement it in the codebase using the spec as a guide and by following best coding practices of the tech stack.
 - When finished: set status `done`.
+
+## Rules you must ALWAYS follow
+- Use Live Specs: If a spec exists - update it instead of creating a new one.
