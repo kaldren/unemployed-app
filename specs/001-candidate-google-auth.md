@@ -1,6 +1,6 @@
 # 001 — Candidate Google sign-in
 
-**Status:** in-progress
+**Status:** done
 **Created:** 2026-10-23
 
 ## Why
@@ -16,11 +16,11 @@ out. Signed-out visitors who open a candidate-only page are sent to `/login` fir
 - [x] `/login` shows a "Continue with Google" button.
 - [x] Clicking it opens Google's consent screen; on success the user returns to the app signed in.
 - [x] The first sign-in creates exactly one `profiles` row with `type = candidate` and the name, email and avatar from Google.
-- [ ] Signing in again reuses the existing user and profile (no duplicates).
-- [ ] The session survives page reloads and browser restarts until the user signs out.
-- [ ] A signed-in user who visits `/login` is redirected to the app home.
-- [ ] A signed-out user who visits a protected candidate page is redirected to `/login`, and after sign-in lands on the page they originally asked for.
-- [ ] Signing out clears the session and returns the user to `/login`.
+- [x] Signing in again reuses the existing user and profile (no duplicates).
+- [x] The session survives page reloads and browser restarts until the user signs out.
+- [x] A signed-in user who visits `/login` is redirected to the app home.
+- [x] A signed-out user who visits a protected candidate page is redirected to `/login`, and after sign-in lands on the page they originally asked for.
+- [x] Signing out clears the session and returns the user to `/login`.
 - [x] A cancelled consent or an OAuth error shows a readable message on `/login`.
 - [x] `profiles` has Row Level Security on; a user can only read and update their own row.
 
@@ -50,6 +50,6 @@ out. Signed-out visitors who open a candidate-only page are sent to `/login` fir
 - [x] Server-side current-user helper that redirects to `/login` (pages don't rely on the proxy alone).
 - [x] Signed-in home page showing the user, with a sign-out action.
 - [x] Apply the migration to Supabase (via MCP, recorded in Drizzle's migrations table).
-- [ ] Confirm the Google provider and redirect URLs in the Supabase dashboard (manual).
+- [x] Confirm the Google provider and redirect URLs in the Supabase dashboard (manual).
 - [x] Lint and build pass.
-- [ ] Manual sign-in / sign-out check with a real Google account.
+- [x] Manual sign-in / sign-out check with a real Google account.
