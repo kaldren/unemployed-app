@@ -6,7 +6,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { COMPLETENESS_STEPS, MIN_SKILLS, getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
-import { ResumeImport } from "./resume-import";
 import { SectionTabs, type Tab } from "./section-tabs";
 import {
   AboutSection,
@@ -42,13 +41,7 @@ async function ProfileEditor() {
   const p = data.profile;
   const missing = getMissingItems(data);
   const done = COMPLETENESS_STEPS - missing.length;
-  const hasListData =
-    data.experiences.length + data.skills.length + data.educations.length + data.certifications.length > 0;
-  const uploadedAt = p?.resumeUploadedAt?.toLocaleDateString("en-GB", { dateStyle: "medium" }) ?? null;
   const currentDomains = data.experiences.filter((e) => !e.endDate && e.companyDomain).map((e) => e.companyDomain!);
-
-  // A new resume import rewrites every section, so remount them to pick up the new data.
-  const version = p?.resumeUploadedAt?.getTime() ?? 0;
 
   const sections: Tab[] = [
     {
@@ -57,7 +50,6 @@ async function ProfileEditor() {
       status: p?.headline && p.about && p.locationCountry ? "done" : "todo",
       content: (
         <AboutSection
-          key={version}
           initial={{
             headline: str(p?.headline),
             about: str(p?.about),
@@ -76,7 +68,6 @@ async function ProfileEditor() {
       status: data.roles.length > 0 && p?.workModes.length ? "done" : "todo",
       content: (
         <PreferencesSection
-          key={version}
           roleSuggestions={catalog.roles}
           initial={{
             roles: data.roles,
@@ -99,7 +90,6 @@ async function ProfileEditor() {
       status: data.experiences.length > 0 || p?.noExperience ? "done" : "todo",
       content: (
         <ExperienceSection
-          key={version}
           noExperience={p?.noExperience ?? false}
           initial={data.experiences.map((e) => ({
             companyName: e.companyName,
@@ -122,7 +112,6 @@ async function ProfileEditor() {
       status: data.skills.length >= MIN_SKILLS ? "done" : "todo",
       content: (
         <SkillsSection
-          key={version}
           suggestions={catalog.skills}
           initial={data.skills.map((s) => ({ name: s.name, level: str(s.level), years: str(s.years) }))}
         />
@@ -137,7 +126,6 @@ async function ProfileEditor() {
       status: "optional",
       content: (
         <EducationSection
-          key={version}
           initial={data.educations.map((e) => ({
             institution: e.institution,
             degree: str(e.degree),
@@ -154,7 +142,6 @@ async function ProfileEditor() {
       status: "optional",
       content: (
         <CertificationsSection
-          key={version}
           initial={data.certifications.map((c) => ({ name: c.name, issuer: str(c.issuer), year: str(c.year) }))}
         />
       ),
@@ -165,7 +152,6 @@ async function ProfileEditor() {
       status: "optional",
       content: (
         <LanguagesSection
-          key={version}
           initial={data.languages.map((l) => ({ languageCode: l.languageCode, proficiency: l.proficiency }))}
         />
       ),
@@ -174,19 +160,11 @@ async function ProfileEditor() {
       id: "privacy",
       label: "Hide my profile from",
       status: "optional",
-      content: <PrivacySection key={version} initial={p?.hiddenCompanyDomains ?? []} suggestions={currentDomains} />,
+      content: <PrivacySection initial={p?.hiddenCompanyDomains ?? []} suggestions={currentDomains} />,
     },
   ];
 
-  const resume: Tab = {
-    id: "resume",
-    label: "Import from resume",
-    status: p?.resumeUploadedAt ? "done" : "optional",
-    content: <ResumeImport hasProfileData={hasListData} uploadedAt={uploadedAt} />,
-  };
-
-  // Brand-new profiles start at the resume import; otherwise at the first thing still missing.
-  const initial = !p && !hasListData ? "resume" : (sections.find((t) => t.status === "todo")?.id ?? "about");
+  const initial = sections.find((t) => t.status === "todo")?.id ?? "about";
 
   return (
     <>
@@ -218,7 +196,6 @@ async function ProfileEditor() {
           <SectionTabs
             initial={initial}
             groups={[
-              { tabs: [resume] },
               { tabs: sections },
               { label: "Optional", tabs: extras },
             ]}
