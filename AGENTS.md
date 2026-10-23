@@ -13,6 +13,26 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 All UI MUST follow [DESIGN.md](DESIGN.md). Read it before writing or changing any markup or styles.
 Use semantic tokens and `src/components/ui` (shadcn/ui); `pnpm lint` rejects raw palette colors, arbitrary colors and `dark:`.
 
+## Workflow
+
+The user is a solo dev. They give features; you ship them without check-ins. Use the `ship` skill.
+
+- **Done means merged.** Feature branch → `pnpm check` green → `verify-in-browser` for UI → `/code-review --fix` → `git merge --no-ff` into `main` → push → CI green.
+- **Never hand back manual checks.** Verify in the browser yourself; add a Playwright test for any user-facing flow.
+- **Hooks enforce quality.** Edits are auto-linted; you can't stop while `pnpm verify` fails. Fix the cause, never disable a hook or a rule.
+- `pnpm verify` = lint + typecheck + unit tests (fast). `pnpm check` = verify + e2e.
+
+### When to ask
+
+Decide yourself by default. Pick the option most consistent with TECH.md, DESIGN.md and existing code, then log it in [DECISIONS.md](DECISIONS.md) if it's non-obvious. Ask only when:
+
+- it costs money or adds a vendor or paid tier not in TECH.md;
+- it is irreversible: deleting production data, destructive migrations on existing tables, force-pushing, rewriting history;
+- it changes product behavior users would notice and no doc or pattern implies an answer;
+- you need something only the user has (credentials, an account, a consent screen).
+
+When blocked on one of these, do every other part first, then ask one concise question with your recommended option.
+
 ## Response style
 
 Respond with disciplined brevity. Think like you are charged per word.
