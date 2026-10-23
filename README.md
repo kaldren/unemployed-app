@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# unemployed-app
 
-## Getting Started
+A hiring platform where **both sides have to say yes**, like a dating app for jobs.
 
-First, run the development server:
+## The problem
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+On LinkedIn, a job post gets hundreds of applicants within hours, and most of them aren't
+qualified. Employers drown in applications, and candidates send dozens of applications
+that nobody reads.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How it works
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Candidates build a profile** from their resume. They set their preferences (location,
+   salary, remote work) and can hide their profile from their current employer.
+2. **Employers post a job** and confirm its must-have requirements.
+3. **AI checks every candidate↔job pair** and keeps only the ones that really fit. Each
+   pair it keeps comes with a score and a short explanation of _why_ it fits.
+4. **Candidates get new matches every day.** They like a job (this is applying) or pass.
+   They can't apply to a job the AI didn't match them to.
+5. **Employers see the same matched candidates** for each job, on anonymous cards with no
+   name, photo or current employer. They like or pass too.
+6. **It's a match only when both sides like each other.** Then the employer sees the full
+   profile, a chat opens, and the candidate enters the hiring pipeline.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Neither side ever learns about the other's passes, or about a like that wasn't returned.
 
-## Learn More
+## Why it's better
 
-To learn more about Next.js, take a look at the following resources:
+- **Employers only review qualified people.** There's no flood of applicants.
+- **Candidates have a reason to come back daily:** new matches arrive every day.
+- **No wasted effort.** A conversation starts only after both sides have said yes.
+- **Safe for people who already have a job:** cards stay anonymous until a match, and
+  their current employer never sees them.
+- **A human makes every hiring decision.** The AI only checks, ranks and explains the
+  matches, and every score is stored so it can be audited.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Next.js · TypeScript · Tailwind + shadcn/ui · Postgres on Neon (pgvector) · Drizzle ·
+Better Auth · Inngest · Claude API · Voyage AI embeddings · Vitest · Playwright
 
-## Deploy on Vercel
+## Getting started
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Requires Node 24+ and pnpm: `pnpm install`, copy `.env.example` to `.env.local` and `.env`,
+then `pnpm dev`. Use `pnpm inngest:dev` to run background jobs.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [PLAN.md](PLAN.md) for the full design, data model and build order.
