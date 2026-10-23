@@ -48,5 +48,3 @@ of the MVP.
 Requires Node 24+, pnpm and Docker (for the Supabase CLI): `pnpm install`, `supabase start`, copy
 `.env.example` to `.env.local` and `.env`, then `pnpm dev`. Use `pnpm inngest:dev` to run
 background jobs.
-
-Features are built from specs in [specs/](specs/).
