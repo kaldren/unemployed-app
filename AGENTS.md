@@ -7,3 +7,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Specs workflow
+
+Features are built from specs in `specs/`. Each spec is `specs/NNN-kebab-name.md` and
+follows `specs/template.md`.
+
+- New feature: copy the template to the next free number, fill Why / What / Acceptance
+  criteria, set status `draft`.
+- Before coding: read the spec, ask about anything unclear, write the Tasks list, set
+  status `in-progress`.
+- While coding: only build what the spec says; tick tasks and acceptance criteria as done.
+  If the plan changes, update the spec first.
+- When finished: set status `done`.
