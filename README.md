@@ -36,12 +36,17 @@ Neither side ever learns about the other's passes, or about a like that wasn't r
 
 ## Stack
 
-Next.js · TypeScript · Tailwind + shadcn/ui · Postgres on Neon (pgvector) · Drizzle ·
-Better Auth · Inngest · Claude API · Voyage AI embeddings · Vitest · Playwright
+Next.js · TypeScript · Tailwind + shadcn/ui · Vercel · Supabase (Postgres + pgvector, Auth,
+Storage, Realtime) · Drizzle · Inngest · Claude API · Voyage AI embeddings · Resend · Sentry ·
+Vitest · Playwright
+
+See [TECH.md](TECH.md) for why we chose each one, how authentication works, and what's left out
+of the MVP.
 
 ## Getting started
 
-Requires Node 24+ and pnpm: `pnpm install`, copy `.env.example` to `.env.local` and `.env`,
-then `pnpm dev`. Use `pnpm inngest:dev` to run background jobs.
+Requires Node 24+, pnpm and Docker (for the Supabase CLI): `pnpm install`, `supabase start`, copy
+`.env.example` to `.env.local` and `.env`, then `pnpm dev`. Use `pnpm inngest:dev` to run
+background jobs.
 
-See [PLAN.md](PLAN.md) for the full design, data model and build order.
+Features are built from specs in [specs/](specs/).
