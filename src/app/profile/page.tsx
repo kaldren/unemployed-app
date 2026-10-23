@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { Card } from "@/components/ui/card";
+import { AppHeader } from "@/components/app-header";
 import { getCurrentUser } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { COMPLETENESS_STEPS, MIN_SKILLS, getMissingItems } from "@/lib/candidate/completeness";
@@ -26,19 +25,14 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <main className="flex flex-1 justify-center px-4 py-10">
-      <div className="flex w-full max-w-5xl flex-col gap-8">
-        <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
-          <ProfileEditor />
-        </Suspense>
-      </div>
-    </main>
+    <Suspense fallback={<p className="m-auto text-muted-foreground">Loading…</p>}>
+      <ProfileEditor />
+    </Suspense>
   );
 }
 
 const str = (v: string | number | null | undefined) => (v == null ? "" : String(v));
 const month = (date: string | null) => (date ? date.slice(0, 7) : "");
-const count = (n: number, one: string, many = `${one}s`) => (n === 0 ? "None yet" : `${n} ${n === 1 ? one : many}`);
 
 async function ProfileEditor() {
   const user = await getCurrentUser();
@@ -61,7 +55,6 @@ async function ProfileEditor() {
       id: "about",
       label: "About you",
       status: p?.headline && p.about && p.locationCountry ? "done" : "todo",
-      meta: p?.headline ?? "Headline, bio, location",
       content: (
         <AboutSection
           key={version}
@@ -81,7 +74,6 @@ async function ProfileEditor() {
       id: "preferences",
       label: "What you're looking for",
       status: data.roles.length > 0 && p?.workModes.length ? "done" : "todo",
-      meta: data.roles.length > 0 ? data.roles.join(", ") : "Roles, work mode, salary",
       content: (
         <PreferencesSection
           key={version}
@@ -105,7 +97,6 @@ async function ProfileEditor() {
       id: "experience",
       label: "Work experience",
       status: data.experiences.length > 0 || p?.noExperience ? "done" : "todo",
-      meta: p?.noExperience && data.experiences.length === 0 ? "No experience yet" : count(data.experiences.length, "job"),
       content: (
         <ExperienceSection
           key={version}
@@ -129,7 +120,6 @@ async function ProfileEditor() {
       id: "skills",
       label: "Skills",
       status: data.skills.length >= MIN_SKILLS ? "done" : "todo",
-      meta: count(data.skills.length, "skill"),
       content: (
         <SkillsSection
           key={version}
@@ -145,7 +135,6 @@ async function ProfileEditor() {
       id: "education",
       label: "Education",
       status: "optional",
-      meta: count(data.educations.length, "entry", "entries"),
       content: (
         <EducationSection
           key={version}
@@ -163,7 +152,6 @@ async function ProfileEditor() {
       id: "certifications",
       label: "Certifications",
       status: "optional",
-      meta: count(data.certifications.length, "certification"),
       content: (
         <CertificationsSection
           key={version}
@@ -175,7 +163,6 @@ async function ProfileEditor() {
       id: "languages",
       label: "Languages",
       status: "optional",
-      meta: count(data.languages.length, "language"),
       content: (
         <LanguagesSection
           key={version}
@@ -187,7 +174,6 @@ async function ProfileEditor() {
       id: "privacy",
       label: "Hide my profile from",
       status: "optional",
-      meta: count(p?.hiddenCompanyDomains.length ?? 0, "company", "companies"),
       content: <PrivacySection key={version} initial={p?.hiddenCompanyDomains ?? []} suggestions={currentDomains} />,
     },
   ];
@@ -196,7 +182,6 @@ async function ProfileEditor() {
     id: "resume",
     label: "Import from resume",
     status: p?.resumeUploadedAt ? "done" : "optional",
-    meta: p?.resumeUploadedAt ? `Uploaded ${uploadedAt}` : "Fill everything from a PDF",
     content: <ResumeImport hasProfileData={hasListData} uploadedAt={uploadedAt} />,
   };
 
@@ -205,49 +190,41 @@ async function ProfileEditor() {
 
   return (
     <>
-      <header className="flex flex-col gap-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Your profile</h1>
-            <p className="text-sm text-muted-foreground">
-              {missing.length === 0 ? "Your profile is complete" : "Complete your profile to get matches"}
-            </p>
-          </div>
-          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline">
-            Home
-          </Link>
-        </div>
-        <Card size="sm" className="flex-row items-center gap-4 px-5">
-          <div
-            role="progressbar"
-            aria-label="Profile completeness"
-            aria-valuemin={0}
-            aria-valuemax={COMPLETENESS_STEPS}
-            aria-valuenow={done}
-            className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
-          >
-            <div
-              className={`h-full rounded-full transition-[width] ${missing.length === 0 ? "bg-success" : "bg-brand"}`}
-              style={{ width: `${(done / COMPLETENESS_STEPS) * 100}%` }}
-            />
-          </div>
-          <span className="shrink-0 text-sm font-medium tabular-nums">
-            {done}/{COMPLETENESS_STEPS}
-          </span>
-        </Card>
-        {missing.length > 0 && (
-          <p className="-mt-2 text-sm text-muted-foreground">Still missing: {missing.join(", ")}.</p>
-        )}
-      </header>
+      <AppHeader user={user} />
+      <main className="flex flex-1 justify-center px-4 pt-6 pb-16">
+        <div className="flex w-full max-w-5xl flex-col gap-10">
+          <header className="flex flex-col gap-4">
+            <h1 className="text-4xl font-semibold tracking-tight">Your profile</h1>
+            <div className="flex max-w-md items-center gap-4">
+              <div
+                role="progressbar"
+                aria-label="Profile completeness"
+                aria-valuemin={0}
+                aria-valuemax={COMPLETENESS_STEPS}
+                aria-valuenow={done}
+                className="h-1 flex-1 overflow-hidden rounded-full bg-muted"
+              >
+                <div
+                  className={`h-full rounded-full transition-[width] ${missing.length === 0 ? "bg-success" : "bg-brand"}`}
+                  style={{ width: `${(done / COMPLETENESS_STEPS) * 100}%` }}
+                />
+              </div>
+              <p className="shrink-0 text-sm text-muted-foreground">
+                {missing.length === 0 ? "Your profile is complete" : "Complete your profile to get matches"}
+              </p>
+            </div>
+          </header>
 
-      <SectionTabs
-        initial={initial}
-        groups={[
-          { label: "Get started", tabs: [resume] },
-          { label: "Required for matching", tabs: sections },
-          { label: "Optional", tabs: extras },
-        ]}
-      />
+          <SectionTabs
+            initial={initial}
+            groups={[
+              { tabs: [resume] },
+              { tabs: sections },
+              { label: "Optional", tabs: extras },
+            ]}
+          />
+        </div>
+      </main>
     </>
   );
 }

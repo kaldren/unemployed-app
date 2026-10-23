@@ -11,6 +11,8 @@ Job hunting is stressful. The UI should feel calm, friendly and on the user's si
 - **Warm.** One coral accent on warm neutrals. Coral marks the thing to do next, not decoration.
 - **Human.** Plain words, short sentences, sentence case ("Save changes", not "SUBMIT").
 - **One primary action per view.** Everything else is outline, ghost or a link.
+- **Less, but better.** Remove before adding: no labels that repeat what's on screen, no counts
+  or meta lines in navigation, no decorative dividers. If a page has one job, it has no card.
 
 ## Tokens
 
@@ -44,7 +46,7 @@ Geist (`font-sans`, set on `html`). Use `font-mono` only for code or IDs.
 
 | Role | Classes |
 |---|---|
-| Page title (`h1`) | `text-2xl font-semibold tracking-tight` |
+| Page title (`h1`) | `text-4xl font-semibold tracking-tight` |
 | Section / card title (`h2`) | `CardTitle` (`text-lg font-semibold`) |
 | Body | `text-sm` (forms, cards), `text-base` (short intros) |
 | Hint / meta | `text-xs text-muted-foreground` or `text-sm text-muted-foreground` |
@@ -52,7 +54,9 @@ Geist (`font-sans`, set on `html`). Use `font-mono` only for code or IDs.
 
 ### Space and depth
 
-- Page shell: `px-4 py-10`, content `max-w-5xl` (editors) or `max-w-sm` (single-card pages).
+- Signed-in pages start with `AppHeader` (`@/components/app-header`): brand → home, Profile, Sign out.
+  Never add a page-level "Home" or "Back" link.
+- Page shell: `px-4 pt-6 pb-16`, content `max-w-5xl` (editors) or `max-w-sm` (single-focus pages).
 - Stacks: `gap-6` between blocks, `gap-4`/`gap-5` between fields, `gap-1.5` label → control.
 - Cards pad `p-6` (built into `Card`). Only `shadow-sm`, only on cards.
 
@@ -105,15 +109,21 @@ tokens (pill buttons, `h-10` controls, `bg-card` inputs). Don't hand-roll a look
 
 ## Patterns
 
-**Single-card page** (sign in, welcome)
+**Single-focus page** (sign in, welcome): no card, centered title, one action.
 
 ```tsx
-<main className="flex flex-1 items-center justify-center px-4">
-  <Card className="w-full max-w-sm gap-6 p-8">…</Card>
+<main className="flex flex-1 items-center justify-center px-4 pb-16">
+  <div className="flex w-full max-w-sm flex-col gap-10 text-center">
+    <h1 className="text-4xl font-semibold tracking-tight">…</h1>
+    <Button size="lg">…</Button>
+  </div>
 </main>
 ```
 
-**Form section**: `SectionForm` gives a `Card` with header, fields and a footer with status text
+**Section navigation**: plain text items, selected `bg-accent` (desktop) / `bg-primary` pill (mobile).
+Status is a green check (done) or a `bg-brand` dot (needed); optional items show nothing.
+
+**Form section**: `SectionForm` gives a `Card` with header, fields and a borderless footer with status text
 on the left (`text-success` "Saved" / `text-muted-foreground` "Changes to save" /
 `text-destructive` error) and the primary `Save` button on the right.
 
