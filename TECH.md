@@ -15,7 +15,7 @@ If something isn't on this page, we don't need it yet. See [Not in the MVP](#not
 | Concern | Choice | Why |
 |---|---|---|
 | Framework | Next.js 16 (App Router, Server Actions) + TypeScript (strict) | Frontend and backend in one deployable app, no separate API |
-| UI | Tailwind CSS 4 + shadcn/ui | Components are copied into the repo, so there's no lock-in |
+| UI | Tailwind CSS 4 + shadcn/ui | Components are copied into the repo, so there's no lock-in. Rules in [DESIGN.md](DESIGN.md) |
 | Validation | Zod | One schema for forms, server actions and Claude's structured output |
 | Hosting | Vercel | Zero-config Next.js, a preview deploy for every PR |
 | Database | Supabase Postgres + pgvector | Managed Postgres, with vectors in the same database |

@@ -30,6 +30,8 @@ test("filling every required section completes the profile", async ({ page }) =>
   await page.goto("/profile");
 
   const about = await section(page, "About you");
+  // Nothing to save until something changes.
+  await expect(about.getByRole("button", { name: "Save" })).toBeDisabled();
   await about.getByLabel("Headline").fill("Backend engineer");
   await about.getByLabel("About").fill("I build reliable APIs and data pipelines.");
   await about.getByLabel("Country").selectOption("BG");

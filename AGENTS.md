@@ -8,6 +8,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Design system
+
+All UI MUST follow [DESIGN.md](DESIGN.md). Read it before writing or changing any markup or styles.
+Use semantic tokens and `src/components/ui` (shadcn/ui); `pnpm lint` rejects raw palette colors, arbitrary colors and `dark:`.
+
 ## Response style
 
 Respond with disciplined brevity. Think like you are charged per word.

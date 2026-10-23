@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import { safeNextPath } from "@/lib/auth";
 import { GoogleButton } from "./google-button";
 
@@ -15,13 +17,11 @@ const ERROR_MESSAGES = {
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 font-sans dark:bg-black">
-      <div className="flex w-full max-w-sm flex-col gap-6 rounded-2xl bg-white p-8 shadow-sm dark:bg-zinc-950">
+    <main className="flex flex-1 items-center justify-center px-4">
+      <Card className="w-full max-w-sm gap-6 p-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-            Sign in
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+          <p className="text-base text-muted-foreground">
             Find jobs where both sides say yes.
           </p>
         </div>
@@ -29,7 +29,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <Suspense fallback={<GoogleButton />}>
           <SignInOptions searchParams={searchParams} />
         </Suspense>
-      </div>
+      </Card>
     </main>
   );
 }
@@ -45,9 +45,7 @@ async function SignInOptions({ searchParams }: Pick<PageProps<"/login">, "search
   return (
     <>
       {message && (
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {message}
-        </p>
+        <Alert variant="destructive">{message}</Alert>
       )}
       <GoogleButton next={next} />
     </>
