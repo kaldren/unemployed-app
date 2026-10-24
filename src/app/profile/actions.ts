@@ -18,13 +18,13 @@ import {
 import { requireCandidate } from "@/lib/auth";
 import { ensureRoles, ensureSkills, type Tx } from "@/lib/candidate/catalog";
 import {
+  ABOUT_MAX,
   aboutSchema,
   certificationsSchema,
   educationsSchema,
   experienceSchema,
   experiencesSchema,
   HEADLINE_MAX,
-  ABOUT_MAX,
   languagesSchema,
   MAX_RESUME_BYTES,
   MAX_RESUME_MB,

@@ -9,11 +9,14 @@ export const metadata: Metadata = {
   title: "Sign in",
 };
 
-const ERROR_MESSAGES: Record<string, string> = {
+const ERROR_MESSAGES = {
   cancelled: "Sign-in was cancelled. Try again when you're ready.",
   failed: "Something went wrong while signing you in. Please try again.",
   session: "Your session has ended. Please sign in again.",
-};
+} as const;
+
+// Own keys only, so prototype keys like "constructor" don't count as known codes.
+const isKnownError = (code: string): code is keyof typeof ERROR_MESSAGES => Object.hasOwn(ERROR_MESSAGES, code);
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
@@ -36,8 +39,7 @@ async function SignInOptions({ searchParams }: Pick<PageProps<"/login">, "search
   const params = await searchParams;
   const next = safeNextPath(typeof params.next === "string" ? params.next : null);
   const error = typeof params.error === "string" ? params.error : null;
-  // Unknown codes (including prototype keys like "constructor") get the generic message.
-  const message = error && (Object.hasOwn(ERROR_MESSAGES, error) ? ERROR_MESSAGES[error] : ERROR_MESSAGES.failed);
+  const message = error && (isKnownError(error) ? ERROR_MESSAGES[error] : ERROR_MESSAGES.failed);
 
   return (
     <>
