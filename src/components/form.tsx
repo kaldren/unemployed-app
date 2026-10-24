@@ -2,7 +2,6 @@
 
 import {
   createContext,
-  startTransition,
   useActionState,
   useContext,
   useEffect,
@@ -31,13 +30,9 @@ type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 export const FieldErrors = createContext<Record<string, string>>({});
 
 // React resets a form after its `action` runs, and controlled selects then show their first option
-// while state still holds the real value. Use as `onSubmit` instead of `action` to skip that reset.
-export function submitWithoutReset(formAction: (formData: FormData) => void) {
-  return (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter);
-    startTransition(() => formAction(formData));
-  };
+// while state still holds the real value. Our forms are fully controlled, so pass this as `onReset`.
+export function keepValuesOnReset(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 }
 
 // Lets a parent (e.g. section tabs) hear which forms have unsaved edits.
@@ -83,7 +78,7 @@ export function SectionForm({
   return (
     <Card asChild>
       <section id={id} aria-labelledby={`${id}-title`}>
-        <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6">
+        <form action={formAction} onReset={keepValuesOnReset} className="flex flex-col gap-6">
           <CardHeader>
             <CardTitle asChild>
               <h2 id={`${id}-title`}>{title}</h2>

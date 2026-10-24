@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { FieldErrors, submitWithoutReset, TextArea } from "@/components/form";
+import { FieldErrors, keepValuesOnReset, TextArea } from "@/components/form";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -18,7 +18,7 @@ export function NewJobForm({ aiEnabled }: { aiEnabled: boolean }) {
 
   return (
     <Card asChild>
-      <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6">
+      <form action={formAction} onReset={keepValuesOnReset} className="flex flex-col gap-6">
         <input type="hidden" name="data" value={JSON.stringify({ ...roleType, brief })} />
         <CardContent className="flex flex-col gap-5">
           <FieldErrors.Provider value={error?.fieldErrors ?? {}}>

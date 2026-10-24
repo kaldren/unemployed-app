@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { SectionForm, submitWithoutReset, TagInput, TextArea, TextInput } from "@/components/form";
+import { SectionForm, keepValuesOnReset, TagInput, TextArea, TextInput } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ActionState } from "@/lib/candidate/schemas";
@@ -89,7 +89,7 @@ function RefineCard({
   return (
     <Card asChild>
       <section aria-labelledby="refine-title">
-        <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6">
+        <form action={formAction} onReset={keepValuesOnReset} className="flex flex-col gap-6">
           <CardHeader>
             <CardTitle asChild>
               <h2 id="refine-title">Refine with AI</h2>
