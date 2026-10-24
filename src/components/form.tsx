@@ -4,6 +4,7 @@ import {
   createContext,
   useActionState,
   useContext,
+  useEffect,
   useId,
   useState,
   type InputHTMLAttributes,
@@ -21,13 +22,22 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/candidate/schemas";
 import { cleanName } from "@/lib/candidate/slug";
-import { useReportDirty } from "./section-tabs";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
 const FieldErrors = createContext<Record<string, string>>({});
 
-// A profile section: a card with its own form that posts `data` as JSON to `action`.
+// Lets a parent (e.g. section tabs) hear which forms have unsaved edits.
+export const ReportDirty = createContext<((id: string, dirty: boolean) => void) | null>(null);
+
+function useReportDirty(id: string, dirty: boolean) {
+  const report = useContext(ReportDirty);
+  useEffect(() => {
+    report?.(id, dirty);
+  }, [report, id, dirty]);
+}
+
+// A form section: a card with its own form that posts `data` as JSON to `action`.
 export function SectionForm({
   id,
   title,

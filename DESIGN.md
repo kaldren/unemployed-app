@@ -75,9 +75,8 @@ Use `src/components/ui/*` (shadcn/ui, Radix base). Import from `@/components/ui/
 | Page-level message | `Alert` (`variant="destructive"` for errors; it sets `role="alert"`) |
 | Class merging | `cn()` from `@/lib/utils` |
 
-Profile forms build on `src/app/profile/ui.tsx` (`SectionForm`, `Field`, `TextInput`, `Select`,
-`TagInput`, `ListEditor`…). Reuse them for any new form; move them to `src/components` when a
-second feature needs them.
+Forms build on `src/components/form.tsx` (`SectionForm`, `Field`, `TextInput`, `Select`,
+`TagInput`, `ListEditor`…). Reuse them for any new form.
 
 **Missing a component?** Add it with `pnpm dlx shadcn@latest add <name>`, then align it with the
 tokens (pill buttons, `h-10` controls, `bg-card` inputs). Don't hand-roll a lookalike.

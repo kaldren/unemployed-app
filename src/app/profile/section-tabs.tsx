@@ -1,7 +1,8 @@
 "use client";
 
+import { ReportDirty } from "@/components/form";
 import { cn } from "@/lib/utils";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 export type TabStatus = "done" | "todo" | "optional";
 
@@ -14,16 +15,6 @@ export type Tab = {
 
 // Tailwind's `lg` breakpoint, below which the nav is a strip above the panel.
 const BELOW_LG = "(max-width: 1023px)";
-
-const ReportDirty = createContext<((id: string, dirty: boolean) => void) | null>(null);
-
-// Lets a section form flag unsaved edits in the nav.
-export function useReportDirty(id: string, dirty: boolean) {
-  const report = useContext(ReportDirty);
-  useEffect(() => {
-    report?.(id, dirty);
-  }, [report, id, dirty]);
-}
 
 // Vertical tabs on large screens, a scrolling strip on small ones. Every panel stays mounted
 // so unsaved edits survive switching sections.

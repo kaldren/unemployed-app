@@ -54,7 +54,7 @@ import {
   TextArea,
   TextInput,
   updateAt,
-} from "./ui";
+} from "@/components/form";
 
 // Form state is all strings/booleans; the server schemas turn "" into null.
 type WorkMode = keyof typeof WORK_MODES;
