@@ -2,11 +2,13 @@
 
 import {
   createContext,
+  startTransition,
   useActionState,
   useContext,
   useEffect,
   useId,
   useState,
+  type FormEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -25,7 +27,18 @@ import { cleanName } from "@/lib/candidate/slug";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
-const FieldErrors = createContext<Record<string, string>>({});
+// Server messages by field name, read by `Field`. `SectionForm` provides it; custom forms can too.
+export const FieldErrors = createContext<Record<string, string>>({});
+
+// React resets a form after its `action` runs, and controlled selects then show their first option
+// while state still holds the real value. Use as `onSubmit` instead of `action` to skip that reset.
+export function submitWithoutReset(formAction: (formData: FormData) => void) {
+  return (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter);
+    startTransition(() => formAction(formData));
+  };
+}
 
 // Lets a parent (e.g. section tabs) hear which forms have unsaved edits.
 export const ReportDirty = createContext<((id: string, dirty: boolean) => void) | null>(null);
@@ -70,7 +83,7 @@ export function SectionForm({
   return (
     <Card asChild>
       <section id={id} aria-labelledby={`${id}-title`}>
-        <form action={formAction} className="flex flex-col gap-6">
+        <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6">
           <CardHeader>
             <CardTitle asChild>
               <h2 id={`${id}-title`}>{title}</h2>
