@@ -3,6 +3,7 @@
 Choices Claude made without asking, newest first. One line each: date, decision, why.
 Overrule any of them by saying so; Claude then updates the code and this log.
 
+- 2026-10-24 — Job status: a "Status" select (Draft / Published) in the job editor, saved with Save. "Published" is the existing `open` enum value (no migration). Publishing also needs a description and at least one skill; drafts don't. If the company isn't approved yet, the hint says candidates will see it once the company is verified.
 - 2026-10-24 — AI drafts also pick seniority / employment type / work mode: on a new post it fills only what the employer left blank (their picks stay); on refine it keeps them unless the instruction changes them. All three are required to save a post (DB columns stay nullable; "Write it myself" may still start with blanks).
 - 2026-10-24 — Job drafting model comes from `JOB_DRAFT_MODEL` (server env only, no UI), defaulting to `claude-haiku-5-5`.
 - 2026-10-24 — Job posts v1: employer picks seniority / employment type / work mode, writes a brief; Claude Haiku 5.5 drafts title, description (plain text) and skills. "Refine with AI" rewrites what's on screen without saving. "Write it myself" makes an empty draft. All jobs stay `draft` (no publish yet). Skills go through the shared `skills` catalog via `job_skills` (ordered by `position`), ready for matching. AI controls are hidden/disabled when `ANTHROPIC_API_KEY` is unset.

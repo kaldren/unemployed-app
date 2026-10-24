@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { SectionForm, keepValuesOnReset, TagInput, TextArea, TextInput } from "@/components/form";
+import { SectionForm, keepValuesOnReset, Select, TagInput, TextArea, TextInput } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ActionState } from "@/lib/candidate/schemas";
@@ -9,22 +9,26 @@ import {
   JOB_DESCRIPTION_MAX,
   JOB_INSTRUCTION_MAX,
   JOB_SKILLS_MAX,
+  JOB_STATUS,
   JOB_TITLE_MAX,
 } from "@/lib/jobs/schemas";
 import { refineJob } from "../actions";
 import { RoleTypeFields, type RoleTypeState } from "../role-type-fields";
 
-type JobState = RoleTypeState & { title: string; description: string; skills: string[] };
+type JobStatus = keyof typeof JOB_STATUS;
+type JobState = RoleTypeState & { title: string; description: string; skills: string[]; status: JobStatus };
 
 export function JobEditor({
   action,
   initial,
   aiEnabled,
+  companyApproved,
   skillSuggestions,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   initial: JobState;
   aiEnabled: boolean;
+  companyApproved: boolean;
   skillSuggestions: string[];
 }) {
   const [job, setJob] = useState(initial);
@@ -60,6 +64,21 @@ export function JobEditor({
           max={JOB_SKILLS_MAX}
           placeholder="Type a skill and press Enter"
         />
+        <Select
+          label="Status"
+          name="status"
+          options={JOB_STATUS}
+          placeholder={null}
+          value={job.status}
+          onChange={(status) => update({ status: status as JobStatus })}
+          hint={
+            job.status === "draft"
+              ? "Only your team can see drafts."
+              : companyApproved
+                ? "Candidates can see this job."
+                : "Candidates will see this job once we've verified your company."
+          }
+        />
       </SectionForm>
       {aiEnabled && <RefineCard job={job} onRefined={(draft) => update(draft)} />}
     </>
@@ -72,7 +91,7 @@ function RefineCard({
   onRefined,
 }: {
   job: JobState;
-  onRefined: (draft: JobState) => void;
+  onRefined: (draft: Omit<JobState, "status">) => void;
 }) {
   const [instruction, setInstruction] = useState("");
   const [state, formAction, pending] = useActionState(

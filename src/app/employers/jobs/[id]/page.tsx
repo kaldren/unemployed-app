@@ -36,6 +36,7 @@ async function Job({ params }: Pick<PageProps<"/employers/jobs/[id]">, "params">
           <JobEditor
             action={saveJob.bind(null, job.id)}
             aiEnabled={isAiConfigured()}
+            companyApproved={user.company.status === "approved"}
             skillSuggestions={catalog.skills}
             initial={{
               title: job.title,
@@ -44,6 +45,7 @@ async function Job({ params }: Pick<PageProps<"/employers/jobs/[id]">, "params">
               workMode: job.workMode ?? "",
               description: job.description,
               skills: job.skills,
+              status: job.status === "open" ? "open" : "draft",
             }}
           />
         </div>

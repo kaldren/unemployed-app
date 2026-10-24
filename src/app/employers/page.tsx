@@ -9,12 +9,13 @@ import { Card } from "@/components/ui/card";
 import { requireEmployer } from "@/lib/auth";
 import { EMPLOYMENT_TYPES, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
 import { listJobs } from "@/lib/jobs/queries";
+import { JOB_STATUS } from "@/lib/jobs/schemas";
 
 export const metadata: Metadata = {
   title: "Employer",
 };
 
-const STATUS_LABELS = { draft: "Draft", open: "Open", closed: "Closed" } as const;
+const STATUS_LABELS = { ...JOB_STATUS, closed: "Closed" } as const;
 
 export default function EmployerHome() {
   return (

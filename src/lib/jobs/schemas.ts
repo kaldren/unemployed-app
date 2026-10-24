@@ -10,6 +10,9 @@ export const JOB_INSTRUCTION_MAX = 1000;
 export const JOB_SKILLS_MAX = 20;
 export const JOB_SKILL_MAX = 60;
 
+// What employers can set. "closed" exists in the database but nothing sets it yet.
+export const JOB_STATUS = { draft: "Draft", open: "Published" } as const;
+
 // Selects post "" for "not set", which we store as null.
 const optionalEnum = <T extends Record<string, string>>(options: T) => blankAsNull(z.enum(keys(options)));
 
@@ -38,7 +41,14 @@ export const jobSchema = z.object({
   title: z.string().trim().min(1, "Add a job title").max(JOB_TITLE_MAX),
   description: z.string().trim().max(JOB_DESCRIPTION_MAX, `Keep it under ${JOB_DESCRIPTION_MAX} characters`),
   skills: skillsList,
-});
+  status: z.enum(keys(JOB_STATUS)),
+})
+  // A draft can be half-written; a published post needs everything candidates will read.
+  .superRefine((job, ctx) => {
+    if (job.status !== "open") return;
+    if (!job.description) ctx.addIssue({ code: "custom", path: ["description"], message: "Add a description before publishing" });
+    if (job.skills.length === 0) ctx.addIssue({ code: "custom", path: ["skills"], message: "Add at least one skill before publishing" });
+  });
 
 export const refineSchema = z.object({
   instruction: z.string().trim().min(1, "Say what to change").max(JOB_INSTRUCTION_MAX),

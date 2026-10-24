@@ -46,10 +46,16 @@ test("an employer writes a job post by hand, saves it and sees it in the list", 
   await field(page, "Skills").press("Enter");
   await field(page, "Skills").fill("PostgreSQL");
   await field(page, "Skills").press("Enter");
+  await expect(field(page, "Status")).toHaveValue("draft");
+  await save.click();
+  await expect(page.getByText("Saved")).toBeVisible();
+
+  await field(page, "Status").selectOption("open");
   await save.click();
   await expect(page.getByText("Saved")).toBeVisible();
 
   await page.reload();
+  await expect(field(page, "Status")).toHaveValue("open");
   await expect(page.getByRole("heading", { name: "Backend Engineer" })).toBeVisible();
   await expect(field(page, "Description")).toHaveValue("Build and run our payments APIs.");
   await expect(page.getByRole("list", { name: "Selected skills" }).getByRole("listitem")).toHaveText(["Go×", "PostgreSQL×"]);
@@ -57,7 +63,7 @@ test("an employer writes a job post by hand, saves it and sees it in the list", 
   await page.getByRole("link", { name: "Unemployed" }).click();
   const job = page.getByRole("list", { name: "Jobs" }).getByRole("link");
   await expect(job).toContainText("Backend Engineer");
-  await expect(job).toContainText("Draft");
+  await expect(job).toContainText("Published");
   await expect(job).toContainText("Senior · Full-time · Remote");
 });
 
@@ -79,6 +85,26 @@ test("a job title and role type are required", async ({ page }) => {
     await expect(field(page, label)).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByText(message).first()).toBeVisible();
   }
+});
+
+test("publishing needs a description and skills; drafts don't", async ({ page }) => {
+  await signInFresh(page);
+  await page.goto("/employers/jobs/new");
+  await field(page, "Seniority").selectOption("junior");
+  await field(page, "Employment type").selectOption("contract");
+  await field(page, "Work mode").selectOption("onsite");
+  await page.getByRole("button", { name: "Write it myself" }).click();
+  await expect(page).toHaveURL(JOB_URL);
+
+  await fill(page, "Job title", "Designer");
+  await field(page, "Status").selectOption("open");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Add a description before publishing").first()).toBeVisible();
+  await expect(page.getByText("Add at least one skill before publishing").first()).toBeVisible();
+
+  await field(page, "Status").selectOption("draft");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Saved")).toBeVisible();
 });
 
 test("jobs that don't belong to the company are not found", async ({ page }) => {
