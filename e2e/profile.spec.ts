@@ -56,8 +56,8 @@ test("filling every required section completes the profile", async ({ page }) =>
 
   const skills = await section(page, "Skills");
   for (const skill of ["TypeScript", "postgres", "Zig"]) {
-    await skills.getByLabel("Add skills").fill(skill);
-    await skills.getByLabel("Add skills").press("Enter");
+    await skills.getByLabel("Add skills", { exact: true }).fill(skill);
+    await skills.getByLabel("Add skills", { exact: true }).press("Enter");
   }
   await skills.getByLabel("TypeScript level").selectOption("expert");
   await save(page, "Skills");
