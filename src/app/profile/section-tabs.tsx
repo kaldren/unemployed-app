@@ -12,6 +12,9 @@ export type Tab = {
   content: ReactNode;
 };
 
+// Tailwind's `lg` breakpoint, below which the nav is a strip above the panel.
+const BELOW_LG = "(max-width: 1023px)";
+
 const ReportDirty = createContext<((id: string, dirty: boolean) => void) | null>(null);
 
 // Lets a section form flag unsaved edits in the nav.
@@ -39,26 +42,25 @@ export function SectionTabs({ groups, initial }: { groups: { label?: string; tab
     setActive(id);
     if (focus) tabRefs.current.get(id)?.focus();
     // On small screens the panel sits below the strip; bring it into view.
-    if (window.matchMedia("(max-width: 1023px)").matches) {
+    if (window.matchMedia(BELOW_LG).matches) {
       panelsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
 
   function onKeyDown(e: KeyboardEvent) {
     const i = tabs.findIndex((t) => t.id === active);
-    const next =
-      e.key === "ArrowDown" || e.key === "ArrowRight"
-        ? (i + 1) % tabs.length
-        : e.key === "ArrowUp" || e.key === "ArrowLeft"
-          ? (i - 1 + tabs.length) % tabs.length
-          : e.key === "Home"
-            ? 0
-            : e.key === "End"
-              ? tabs.length - 1
-              : null;
-    if (next === null) return;
+    const targets: Record<string, number> = {
+      ArrowDown: i + 1,
+      ArrowRight: i + 1,
+      ArrowUp: i - 1,
+      ArrowLeft: i - 1,
+      Home: 0,
+      End: tabs.length - 1,
+    };
+    const target = targets[e.key];
+    if (target === undefined) return;
     e.preventDefault();
-    select(tabs[next].id, true);
+    select(tabs[(target + tabs.length) % tabs.length].id, true);
   }
 
   return (

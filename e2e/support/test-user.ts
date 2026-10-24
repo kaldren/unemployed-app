@@ -1,6 +1,7 @@
 import type { BrowserContext } from "@playwright/test";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import { supabaseEnv } from "../../src/lib/env";
 
 // Google blocks automated logins, so signed-in tests use a dedicated email user
 // whose session is minted with the admin API and written into the browser as cookies.
@@ -9,8 +10,7 @@ export const TEST_USER = {
   fullName: "E2E Candidate",
 };
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const { url, anonKey } = supabaseEnv();
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const hasServiceRoleKey = Boolean(serviceRoleKey);
@@ -31,11 +31,15 @@ async function getOrCreateUserId(): Promise<string> {
   if (data.user) return data.user.id;
   if (error?.code !== "email_exists") throw error;
 
-  const { data: list, error: listError } = await supabase.auth.admin.listUsers();
-  if (listError) throw listError;
-  const user = list.users.find((u) => u.email === TEST_USER.email);
-  if (!user) throw new Error(`Test user ${TEST_USER.email} not found`);
-  return user.id;
+  // listUsers is paginated; walk the pages until the test user turns up.
+  const perPage = 1000;
+  for (let page = 1; ; page++) {
+    const { data: list, error: listError } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (listError) throw listError;
+    const user = list.users.find((u) => u.email === TEST_USER.email);
+    if (user) return user.id;
+    if (list.users.length < perPage) throw new Error(`Test user ${TEST_USER.email} not found`);
+  }
 }
 
 export async function setProfile(userId: string, exists: boolean) {

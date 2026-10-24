@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { getCurrentUser } from "@/lib/auth";
+import { PageLoading } from "@/components/page-loading";
+import { requireCandidate } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
-import { COMPLETENESS_STEPS, MIN_SKILLS, getMissingItems } from "@/lib/candidate/completeness";
+import { COMPLETENESS_STEPS, getMissingItems, type ProfileSection } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
+import { cn } from "@/lib/utils";
+import { DEFAULT_CURRENCY } from "@/lib/candidate/schemas";
 import { SectionTabs, type Tab } from "./section-tabs";
 import {
   AboutSection,
@@ -24,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<p className="m-auto text-muted-foreground">Loading…</p>}>
+    <Suspense fallback={<PageLoading />}>
       <ProfileEditor />
     </Suspense>
   );
@@ -34,20 +36,20 @@ const str = (v: string | number | null | undefined) => (v == null ? "" : String(
 const month = (date: string | null) => (date ? date.slice(0, 7) : "");
 
 async function ProfileEditor() {
-  const user = await getCurrentUser();
-  if (user.type !== "candidate") redirect("/");
+  const user = await requireCandidate();
 
   const [data, catalog] = await Promise.all([getCandidateProfile(user.id), getCatalogNames()]);
   const p = data.profile;
   const missing = getMissingItems(data);
   const done = COMPLETENESS_STEPS - missing.length;
-  const currentDomains = data.experiences.filter((e) => !e.endDate && e.companyDomain).map((e) => e.companyDomain!);
+  const status = (section: ProfileSection) => (missing.some((m) => m.section === section) ? "todo" : "done");
+  const currentDomains = data.experiences.flatMap((e) => (!e.endDate && e.companyDomain ? [e.companyDomain] : []));
 
   const sections: Tab[] = [
     {
       id: "about",
       label: "About you",
-      status: p?.headline && p.about && p.locationCountry ? "done" : "todo",
+      status: status("about"),
       content: (
         <AboutSection
           initial={{
@@ -65,7 +67,7 @@ async function ProfileEditor() {
     {
       id: "preferences",
       label: "What you're looking for",
-      status: data.roles.length > 0 && p?.workModes.length ? "done" : "todo",
+      status: status("preferences"),
       content: (
         <PreferencesSection
           roleSuggestions={catalog.roles}
@@ -75,7 +77,7 @@ async function ProfileEditor() {
             workModes: p?.workModes ?? [],
             employmentTypes: p?.employmentTypes ?? [],
             salaryMin: str(p?.salaryMin),
-            salaryCurrency: p?.salaryCurrency ?? "EUR",
+            salaryCurrency: p?.salaryCurrency ?? DEFAULT_CURRENCY,
             availableFrom: str(p?.availableFrom),
             jobSearchStatus: str(p?.jobSearchStatus),
             openToRelocation: p?.openToRelocation ?? false,
@@ -87,7 +89,7 @@ async function ProfileEditor() {
     {
       id: "experience",
       label: "Work experience",
-      status: data.experiences.length > 0 || p?.noExperience ? "done" : "todo",
+      status: status("experience"),
       content: (
         <ExperienceSection
           noExperience={p?.noExperience ?? false}
@@ -109,7 +111,7 @@ async function ProfileEditor() {
     {
       id: "skills",
       label: "Skills",
-      status: data.skills.length >= MIN_SKILLS ? "done" : "todo",
+      status: status("skills"),
       content: (
         <SkillsSection
           suggestions={catalog.skills}
@@ -183,7 +185,7 @@ async function ProfileEditor() {
                 className="h-1 flex-1 overflow-hidden rounded-full bg-muted"
               >
                 <div
-                  className={`h-full rounded-full transition-[width] ${missing.length === 0 ? "bg-success" : "bg-brand"}`}
+                  className={cn("h-full rounded-full transition-[width]", missing.length === 0 ? "bg-success" : "bg-brand")}
                   style={{ width: `${(done / COMPLETENESS_STEPS) * 100}%` }}
                 />
               </div>

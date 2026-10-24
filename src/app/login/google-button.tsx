@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
-export function GoogleButton({ next }: { next?: string }) {
+// `disabled` while the page is still reading `next` from the URL.
+export function GoogleButton({ next = "/", disabled = false }: { next?: string; disabled?: boolean }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,7 +14,7 @@ export function GoogleButton({ next }: { next?: string }) {
     setError(null);
 
     const redirectTo = new URL("/auth/callback", window.location.origin);
-    if (next) redirectTo.searchParams.set("next", next);
+    redirectTo.searchParams.set("next", next);
 
     const { error } = await createClient().auth.signInWithOAuth({
       provider: "google",
@@ -34,7 +35,7 @@ export function GoogleButton({ next }: { next?: string }) {
         variant="outline"
         size="lg"
         onClick={signIn}
-        disabled={pending || next === undefined}
+        disabled={pending || disabled}
         className="w-full"
       >
         <GoogleLogo />
