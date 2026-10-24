@@ -42,7 +42,7 @@ export function clampDraft(draft: JobDraft): JobDraft {
   const seen = new Set<string>();
   const skills: string[] = [];
   for (const raw of draft.skills) {
-    const name = cleanName(raw).slice(0, JOB_SKILL_MAX);
+    const name = cleanName(raw).slice(0, JOB_SKILL_MAX).trimEnd();
     const slug = normalizeSlug(name);
     if (!slug || seen.has(slug)) continue;
     seen.add(slug);
@@ -50,8 +50,8 @@ export function clampDraft(draft: JobDraft): JobDraft {
     if (skills.length === JOB_SKILLS_MAX) break;
   }
   return {
-    title: draft.title.trim().slice(0, JOB_TITLE_MAX),
-    description: draft.description.trim().slice(0, JOB_DESCRIPTION_MAX),
+    title: draft.title.trim().slice(0, JOB_TITLE_MAX).trimEnd(),
+    description: draft.description.trim().slice(0, JOB_DESCRIPTION_MAX).trimEnd(),
     skills,
   };
 }

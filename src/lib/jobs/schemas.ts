@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EMPLOYMENT_TYPES, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
+import { blankAsNull, EMPLOYMENT_TYPES, keys, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
 
 // Limits shared by the forms, the schemas and the AI draft. Titles, descriptions and briefs
 // are also check constraints on `jobs`.
@@ -10,12 +10,8 @@ export const JOB_INSTRUCTION_MAX = 1000;
 export const JOB_SKILLS_MAX = 20;
 export const JOB_SKILL_MAX = 60;
 
-const keys = <T extends Record<string, string>>(o: T) =>
-  Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
-
 // Selects post "" for "not set", which we store as null.
-const optionalEnum = <T extends Record<string, string>>(options: T) =>
-  z.union([z.literal("").transform(() => null), z.enum(keys(options))]).nullable();
+const optionalEnum = <T extends Record<string, string>>(options: T) => blankAsNull(z.enum(keys(options)));
 
 export const roleTypeSchema = z.object({
   seniority: optionalEnum(SENIORITY),
@@ -46,7 +42,6 @@ export const refineSchema = z.object({
   }),
 });
 
-export type JobInput = z.input<typeof jobSchema>;
 export type RoleType = z.output<typeof roleTypeSchema>;
 
 // What the AI writes. The employer picks the role type themselves.

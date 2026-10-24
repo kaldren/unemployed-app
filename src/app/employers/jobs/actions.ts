@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { z } from "zod";
+import { z } from "zod";
 import { db } from "@/db";
 import { jobs, jobSkills } from "@/db/schema";
 import { requireEmployer } from "@/lib/auth";
@@ -15,6 +15,7 @@ import type { DraftRequest } from "@/lib/jobs/prompt";
 import { jobSchema, newJobSchema, refineSchema, type JobDraft } from "@/lib/jobs/schemas";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
+const JOB_GONE = "This job no longer exists.";
 const AI_UNAVAILABLE = "AI drafting isn't available right now. Write the post yourself for now.";
 const AI_FAILED = "The AI couldn't write a draft this time. Try again, or write it yourself.";
 
@@ -88,6 +89,8 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
 
 export async function saveJob(jobId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireEmployer();
+  // Bound args come from the client; a malformed id would make Postgres throw.
+  if (!z.uuid().safeParse(jobId).success) return { status: "error", message: JOB_GONE };
   const parsed = parseData(jobSchema, formData);
   if (!parsed) return { status: "error", message: GENERIC_ERROR };
   if (!parsed.success) return toActionError(parsed.error);
@@ -103,7 +106,7 @@ export async function saveJob(jobId: string, _prev: ActionState, formData: FormD
     await replaceSkills(tx, jobId, skills);
     return true;
   });
-  if (!saved) return { status: "error", message: "This job no longer exists." };
+  if (!saved) return { status: "error", message: JOB_GONE };
 
   revalidatePath("/employers");
   revalidatePath(`/employers/jobs/${jobId}`);

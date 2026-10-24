@@ -28,7 +28,8 @@ export function JobEditor({
   skillSuggestions: string[];
 }) {
   const [job, setJob] = useState(initial);
-  const update = (patch: Partial<JobState>) => setJob({ ...job, ...patch });
+  // Functional update: a refine resolves after an await, when `job` may be stale.
+  const update = (patch: Partial<JobState>) => setJob((current) => ({ ...current, ...patch }));
 
   return (
     <>

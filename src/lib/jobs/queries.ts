@@ -22,17 +22,19 @@ export async function listJobs(companyId: string) {
 // A company's job with its skills in display order, or null if it isn't theirs (or the id is malformed).
 export async function getJob(companyId: string, jobId: string) {
   if (!z.uuid().safeParse(jobId).success) return null;
-  const [job] = await db
-    .select()
-    .from(jobs)
-    .where(and(eq(jobs.id, jobId), eq(jobs.companyId, companyId)));
+  // Both at once; the skills are discarded unless the job is the company's.
+  const [[job], skillRows] = await Promise.all([
+    db
+      .select()
+      .from(jobs)
+      .where(and(eq(jobs.id, jobId), eq(jobs.companyId, companyId))),
+    db
+      .select({ name: skills.name })
+      .from(jobSkills)
+      .innerJoin(skills, eq(skills.id, jobSkills.skillId))
+      .where(eq(jobSkills.jobId, jobId))
+      .orderBy(asc(jobSkills.position)),
+  ]);
   if (!job) return null;
-
-  const skillRows = await db
-    .select({ name: skills.name })
-    .from(jobSkills)
-    .innerJoin(skills, eq(skills.id, jobSkills.skillId))
-    .where(eq(jobSkills.jobId, jobId))
-    .orderBy(asc(jobSkills.position));
   return { ...job, skills: skillRows.map((r) => r.name) };
 }
