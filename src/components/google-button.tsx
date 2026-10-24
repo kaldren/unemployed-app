@@ -2,10 +2,19 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { Portal } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/client";
 
 // `disabled` while the page is still reading `next` from the URL.
-export function GoogleButton({ next = "/", disabled = false }: { next?: string; disabled?: boolean }) {
+export function GoogleButton({
+  portal = "candidate",
+  next,
+  disabled = false,
+}: {
+  portal?: Portal;
+  next?: string;
+  disabled?: boolean;
+}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,7 +23,8 @@ export function GoogleButton({ next = "/", disabled = false }: { next?: string; 
     setError(null);
 
     const redirectTo = new URL("/auth/callback", window.location.origin);
-    redirectTo.searchParams.set("next", next);
+    if (portal !== "candidate") redirectTo.searchParams.set("portal", portal);
+    if (next) redirectTo.searchParams.set("next", next);
 
     const { error } = await createClient().auth.signInWithOAuth({
       provider: "google",

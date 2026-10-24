@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { GoogleButton } from "@/components/google-button";
 import { safeNextPath } from "@/lib/auth";
+import { authErrorMessage, LOGIN_PATH } from "@/lib/portal";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
-import { GoogleButton } from "./google-button";
 
 export const metadata: Metadata = {
   title: "Sign in",
 };
-
-const ERROR_MESSAGES = {
-  cancelled: "Sign-in was cancelled. Try again when you're ready.",
-  failed: "Something went wrong while signing you in. Please try again.",
-  session: "Your session has ended. Please sign in again.",
-} as const;
-
-// Own keys only, so prototype keys like "constructor" don't count as known codes.
-const isKnownError = (code: string): code is keyof typeof ERROR_MESSAGES => Object.hasOwn(ERROR_MESSAGES, code);
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
@@ -30,6 +24,9 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <Suspense fallback={<GoogleButton disabled />}>
           <SignInOptions searchParams={searchParams} />
         </Suspense>
+        <Button asChild variant="link" size="sm">
+          <Link href={LOGIN_PATH.employer}>Hiring? Sign in as an employer</Link>
+        </Button>
       </div>
     </main>
   );
@@ -38,8 +35,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 async function SignInOptions({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const params = await searchParams;
   const next = safeNextPath(typeof params.next === "string" ? params.next : null);
-  const error = typeof params.error === "string" ? params.error : null;
-  const message = error && (isKnownError(error) ? ERROR_MESSAGES[error] : ERROR_MESSAGES.failed);
+  const message = authErrorMessage(params.error);
 
   return (
     <>

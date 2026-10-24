@@ -29,6 +29,20 @@
       "when": 1792787306410,
       "tag": "0003_resume_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792822308454,
+      "tag": "0004_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792822747070,
+      "tag": "0005_lock_profile_type",
+      "breakpoints": true
     }
   ]
 }

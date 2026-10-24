@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { db } from "@/db";
-import { profiles, type Profile } from "@/db/schema";
+import { companies, companyMembers, profiles, type Company, type Profile } from "@/db/schema";
+import { HOME_PATH } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = Pick<Profile, "id" | "type" | "fullName" | "email" | "avatarUrl">;
@@ -40,14 +41,39 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
 // getCurrentUser for candidate-only pages and actions; anyone else goes home.
 export async function requireCandidate(): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (user.type !== "candidate") redirect("/");
+  if (user.type !== "candidate") redirect(HOME_PATH[user.type]);
   return user;
 }
 
+export type CurrentEmployer = CurrentUser & {
+  company: Pick<Company, "id" | "name" | "domain" | "status">;
+  role: "owner" | "member";
+};
+
+// getCurrentUser for employer-only pages and actions, with the employer's company; anyone else goes home.
+export const requireEmployer = cache(async (): Promise<CurrentEmployer> => {
+  const user = await getCurrentUser();
+  if (user.type !== "employer") redirect("/");
+
+  const [membership] = await db
+    .select({
+      role: companyMembers.role,
+      company: { id: companies.id, name: companies.name, domain: companies.domain, status: companies.status },
+    })
+    .from(companyMembers)
+    .innerJoin(companies, eq(companies.id, companyMembers.companyId))
+    .where(eq(companyMembers.profileId, user.id));
+
+  // Created in the same transaction as the profile, so this is only a safety net.
+  if (!membership) redirect("/auth/signout?portal=employer");
+
+  return { ...user, ...membership };
+});
+
 // Only allow same-origin relative paths, so `next` can't become an open redirect.
-export function safeNextPath(next: string | null | undefined): string {
+export function safeNextPath(next: string | null | undefined, fallback = "/"): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return "/";
+    return fallback;
   }
   return next;
 }

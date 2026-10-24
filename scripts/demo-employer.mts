@@ -1,0 +1,52 @@
+// Creates (or refreshes) a demo employer with an approved company, and prints a one-time sign-in link.
+// Usage: pnpm demo:employer [base url, default http://localhost:3000]
+// Needs SUPABASE_SERVICE_ROLE_KEY in .env.local. The link works once and expires after an hour; rerun for a new one.
+import { existsSync } from "node:fs";
+import { createClient } from "@supabase/supabase-js";
+
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+
+const DEMO = { email: "demo@acme-demo.test", fullName: "Demo Employer" };
+const COMPANY = { domain: "acme-demo.test", name: "Acme Demo" };
+
+const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey } = process.env;
+if (!url || !serviceRoleKey) {
+  console.error("Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local");
+  process.exit(2);
+}
+
+const supabase = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+const check = <T extends { error: unknown }>(result: T) => {
+  if (result.error) throw result.error;
+  return result;
+};
+
+const created = await supabase.auth.admin.createUser({
+  email: DEMO.email,
+  email_confirm: true,
+  user_metadata: { full_name: DEMO.fullName },
+});
+if (created.error && created.error.code !== "email_exists") throw created.error;
+
+// The link also tells us the user's id, whether they were just created or already existed.
+const { data: link } = check(await supabase.auth.admin.generateLink({ type: "magiclink", email: DEMO.email }));
+const { user, properties } = link as { user: { id: string }; properties: { hashed_token: string } };
+const userId = user.id;
+
+check(
+  await supabase.from("profiles").upsert({ id: userId, type: "employer", email: DEMO.email, full_name: DEMO.fullName }),
+);
+const { data: company } = check(
+  await supabase
+    .from("companies")
+    .upsert({ ...COMPANY, status: "approved" }, { onConflict: "domain" })
+    .select("id")
+    .single(),
+);
+check(await supabase.from("company_members").upsert({ profile_id: userId, company_id: company!.id, role: "owner" }));
+
+const signIn = new URL("/auth/callback", process.argv[2] ?? "http://localhost:3000");
+signIn.searchParams.set("portal", "employer");
+signIn.searchParams.set("type", "magiclink");
+signIn.searchParams.set("token_hash", properties.hashed_token);
+console.log(`${DEMO.email} owns ${COMPANY.name} (approved). Open this link to sign in:\n${signIn}`);

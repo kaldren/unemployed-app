@@ -1,13 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
+import { HOME_PATH, LOGIN_PATH, type Portal } from "@/lib/portal";
+
+const LOGIN_PATHS: string[] = Object.values(LOGIN_PATH);
 
 // Paths a signed-out visitor may open. Everything else requires a session.
-const PUBLIC_PATHS = ["/login", "/auth"];
+const PUBLIC_PATHS = [...LOGIN_PATHS, "/auth"];
 
-function isPublic(pathname: string) {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-}
+const isUnder = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`);
+const isPublic = (pathname: string) => PUBLIC_PATHS.some((path) => isUnder(pathname, path));
+const portalOf = (pathname: string): Portal => (isUnder(pathname, HOME_PATH.employer) ? "employer" : "candidate");
 
 // Refreshes the Supabase session cookie and does optimistic auth redirects.
 // Pages still verify the user themselves (see src/lib/auth.ts).
@@ -40,13 +43,13 @@ export async function updateSession(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!signedIn && !isPublic(pathname)) {
-    const url = new URL("/login", request.url);
+    const url = new URL(LOGIN_PATH[portalOf(pathname)], request.url);
     url.searchParams.set("next", pathname + search);
     return redirectWithCookies(url, response);
   }
 
-  if (signedIn && pathname === "/login") {
-    return redirectWithCookies(new URL("/", request.url), response);
+  if (signedIn && LOGIN_PATHS.includes(pathname)) {
+    return redirectWithCookies(new URL(HOME_PATH[portalOf(pathname)], request.url), response);
   }
 
   return response;
