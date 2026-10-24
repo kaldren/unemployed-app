@@ -8,7 +8,8 @@ import { companyNameFromDomain, emailDomain, isWorkEmail } from "@/lib/employer/
 import { HOME_PATH, LOGIN_PATH, parsePortal, type AuthError, type Portal } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
-const EMAIL_OTP_TYPES: EmailOtpType[] = ["email", "magiclink"];
+// New users may get the "Confirm signup" email, whose link carries `type=signup`.
+const EMAIL_OTP_TYPES: EmailOtpType[] = ["email", "magiclink", "signup"];
 
 // Google (via Supabase) and magic links land here. Google sends a one-time `code` (or an error if the
 // user cancelled); magic links send a `code` too, or a `token_hash` when the email template links here directly.
@@ -43,7 +44,8 @@ export async function GET(request: NextRequest) {
     result = "failed";
   }
   if (result) {
-    await supabase.auth.signOut();
+    // Local only: a refused sign-in mustn't end the user's sessions on other devices.
+    await supabase.auth.signOut({ scope: "local" });
     return loginWithError(request, portal, result);
   }
 
@@ -82,7 +84,13 @@ async function createEmployer(user: User): Promise<AuthError | null> {
 
   const domain = emailDomain(email);
   await db.transaction(async (tx) => {
-    await tx.insert(profiles).values(profileValues(user, "employer"));
+    // The same link opened twice at once: the second request waits here, then finds the profile made.
+    const [inserted] = await tx
+      .insert(profiles)
+      .values(profileValues(user, "employer"))
+      .onConflictDoNothing({ target: profiles.id })
+      .returning({ id: profiles.id });
+    if (!inserted) return;
     const [created] = await tx
       .insert(companies)
       .values({ domain, name: companyNameFromDomain(domain) })

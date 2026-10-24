@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { db } from "@/db";
 import { companies, companyMembers, profiles, type Company, type Profile } from "@/db/schema";
+import { HOME_PATH } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = Pick<Profile, "id" | "type" | "fullName" | "email" | "avatarUrl">;
@@ -40,7 +41,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
 // getCurrentUser for candidate-only pages and actions; anyone else goes home.
 export async function requireCandidate(): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (user.type !== "candidate") redirect("/");
+  if (user.type !== "candidate") redirect(HOME_PATH[user.type]);
   return user;
 }
 
