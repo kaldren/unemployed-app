@@ -2,7 +2,7 @@
 
 import { ReportDirty } from "@/components/form";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 export type TabStatus = "done" | "todo" | "optional";
 
