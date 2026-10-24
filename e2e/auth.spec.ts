@@ -23,6 +23,11 @@ test.describe("signed out", () => {
     await expect(page).toHaveURL("/login?error=failed");
     await expect(page.getByRole("alert").filter({ hasText: /Something went wrong/ })).toBeVisible();
   });
+
+  test("unknown error codes show the generic message", async ({ page }) => {
+    await page.goto("/login?error=constructor");
+    await expect(page.getByRole("alert").filter({ hasText: /Something went wrong/ })).toBeVisible();
+  });
 });
 
 test.describe("signed in", () => {

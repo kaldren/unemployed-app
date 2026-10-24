@@ -2,6 +2,7 @@ import "server-only";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  type CandidateProfile,
   candidateLanguages,
   candidateProfiles,
   candidateRoles,
@@ -54,7 +55,8 @@ export async function getCandidateProfile(profileId: string) {
     ]);
 
   return {
-    profile: profile ?? null,
+    // No row until the candidate first saves a section.
+    profile: (profile as CandidateProfile | undefined) ?? null,
     experiences: experienceRows,
     skills: skillRows,
     roles: roleRows.map((r) => r.name),
