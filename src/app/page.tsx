@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getMissingItems } from "@/lib/candidate/completeness";
@@ -9,7 +10,7 @@ import { getCandidateProfile } from "@/lib/candidate/queries";
 
 export default function Home() {
   return (
-    <Suspense fallback={<p className="m-auto text-muted-foreground">Loading…</p>}>
+    <Suspense fallback={<PageLoading />}>
       <Welcome />
     </Suspense>
   );

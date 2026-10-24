@@ -4,14 +4,23 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { COUNTRIES, LANGUAGES } from "@/lib/candidate/locales";
+import { MIN_SKILLS } from "@/lib/candidate/completeness";
 import {
   ABOUT_MAX,
   AVAILABILITY,
   CURRENCIES,
+  DESCRIPTION_MAX,
   EMPLOYMENT_TYPES,
+  HEADLINE_MAX,
   JOB_SEARCH_STATUS,
   LANGUAGE_PROFICIENCY,
+  MAX_CERTIFICATIONS,
+  MAX_EDUCATIONS,
+  MAX_EXPERIENCES,
+  MAX_HIDDEN_DOMAINS,
+  MAX_LANGUAGES,
   MAX_ROLES,
+  MAX_SKILL_YEARS,
   MAX_SKILLS,
   SENIORITY,
   SKILL_LEVELS,
@@ -81,7 +90,7 @@ export function AboutSection({ initial }: { initial: Stringly<AboutInput> }) {
         name="headline"
         value={v.headline}
         onChange={(headline) => set({ headline })}
-        maxLength={120}
+        maxLength={HEADLINE_MAX}
         placeholder="Senior backend engineer focused on payments"
       />
       <TextArea
@@ -246,7 +255,7 @@ export function ExperienceSection({ initial, noExperience }: { initial: Experien
         empty="No jobs added yet."
         addLabel="Add a job"
         newItem={emptyExperience}
-        max={30}
+        max={MAX_EXPERIENCES}
         renderItem={(e, update, i) => (
           <>
             <div className={grid}>
@@ -305,7 +314,7 @@ export function ExperienceSection({ initial, noExperience }: { initial: Experien
               name={`experiences.${i}.description`}
               value={e.description}
               onChange={(description) => update({ description })}
-              maxLength={3000}
+              maxLength={DESCRIPTION_MAX}
               rows={3}
               placeholder="Responsibilities, achievements, tech you used."
             />
@@ -326,7 +335,7 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
     <SectionForm
       id="skills"
       title="Skills"
-      description="Add at least 3. Matching weighs your strongest skills most."
+      description={`Add at least ${MIN_SKILLS}. Matching weighs your strongest skills most.`}
       action={saveSkills}
       data={{ skills: items }}
     >
@@ -375,7 +384,7 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
                       aria-label={`${s.name} years`}
                       type="number"
                       min={0}
-                      max={50}
+                      max={MAX_SKILL_YEARS}
                       inputMode="numeric"
                       value={s.years}
                       onChange={(e) => update({ years: e.target.value })}
@@ -401,7 +410,7 @@ export function EducationSection({ initial }: { initial: EducationState[] }) {
         empty="No education added."
         addLabel="Add education"
         newItem={() => ({ institution: "", degree: "", fieldOfStudy: "", startYear: "", endYear: "" })}
-        max={15}
+        max={MAX_EDUCATIONS}
         renderItem={(e, update, i) => (
           <div className={grid}>
             <TextInput
@@ -438,7 +447,7 @@ export function CertificationsSection({ initial }: { initial: CertificationState
         empty="No certifications added."
         addLabel="Add a certification"
         newItem={() => ({ name: "", issuer: "", year: "" })}
-        max={30}
+        max={MAX_CERTIFICATIONS}
         renderItem={(c, update, i) => (
           <div className="grid gap-4 sm:grid-cols-[2fr_2fr_1fr]">
             <TextInput label="Name" name={`certifications.${i}.name`} value={c.name} onChange={(name) => update({ name })} />
@@ -461,7 +470,7 @@ export function LanguagesSection({ initial }: { initial: LanguageState[] }) {
         empty="No languages added."
         addLabel="Add a language"
         newItem={() => ({ languageCode: "", proficiency: "professional" })}
-        max={15}
+        max={MAX_LANGUAGES}
         renderItem={(l, update, i) => (
           <div className={grid}>
             <Select
@@ -503,7 +512,7 @@ export function PrivacySection({ initial, suggestions }: { initial: string[]; su
         value={domains}
         onChange={setDomains}
         suggestions={suggestions}
-        max={20}
+        max={MAX_HIDDEN_DOMAINS}
         placeholder="acme.com"
       />
     </SectionForm>
