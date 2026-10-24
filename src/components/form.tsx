@@ -29,10 +29,12 @@ type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 // Server messages by field name, read by `Field`. `SectionForm` provides it; custom forms can too.
 export const FieldErrors = createContext<Record<string, string>>({});
 
-// React resets a form after its `action` runs, and controlled selects then show their first option
-// while state still holds the real value. Our forms are fully controlled, so pass this as `onReset`.
+// React resets a form after its `action` runs. Our forms are fully controlled, and the reset only
+// breaks them: selects show their first option, and Radix checkboxes revert to unchecked. Pass this
+// as `onResetCapture` so the reset is cancelled before the checkboxes' own listeners hear it.
 export function keepValuesOnReset(event: FormEvent<HTMLFormElement>) {
   event.preventDefault();
+  event.stopPropagation();
 }
 
 // Lets a parent (e.g. section tabs) hear which forms have unsaved edits.
@@ -78,7 +80,7 @@ export function SectionForm({
   return (
     <Card asChild>
       <section id={id} aria-labelledby={`${id}-title`}>
-        <form action={formAction} onReset={keepValuesOnReset} className="flex flex-col gap-6">
+        <form action={formAction} onResetCapture={keepValuesOnReset} noValidate className="flex flex-col gap-6">
           <CardHeader>
             <CardTitle asChild>
               <h2 id={`${id}-title`}>{title}</h2>

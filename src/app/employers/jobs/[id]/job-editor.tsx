@@ -89,7 +89,7 @@ function RefineCard({
   return (
     <Card asChild>
       <section aria-labelledby="refine-title">
-        <form action={formAction} onReset={keepValuesOnReset} className="flex flex-col gap-6">
+        <form action={formAction} onResetCapture={keepValuesOnReset} noValidate className="flex flex-col gap-6">
           <CardHeader>
             <CardTitle asChild>
               <h2 id="refine-title">Refine with AI</h2>

@@ -18,7 +18,7 @@ export function NewJobForm({ aiEnabled }: { aiEnabled: boolean }) {
 
   return (
     <Card asChild>
-      <form action={formAction} onReset={keepValuesOnReset} className="flex flex-col gap-6">
+      <form action={formAction} onResetCapture={keepValuesOnReset} noValidate className="flex flex-col gap-6">
         <input type="hidden" name="data" value={JSON.stringify({ ...roleType, brief })} />
         <CardContent className="flex flex-col gap-5">
           <FieldErrors.Provider value={error?.fieldErrors ?? {}}>
