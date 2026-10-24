@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/candidate/schemas";
+import { cleanName } from "@/lib/candidate/slug";
 import { useReportDirty } from "./section-tabs";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -97,6 +98,20 @@ export function useFieldError(name: string): string | undefined {
   return useContext(FieldErrors)[name];
 }
 
+// The server's message for `name`, shown under its control.
+export function FieldError({ name, id }: { name: string; id?: string }) {
+  const error = useFieldError(name);
+  return error ? (
+    <p id={id} className="text-sm text-destructive">
+      {error}
+    </p>
+  ) : null;
+}
+
+export function updateAt<T>(items: T[], index: number, patch: Partial<T>): T[] {
+  return items.map((item, i) => (i === index ? { ...item, ...patch } : item));
+}
+
 export function Field({
   label,
   name,
@@ -116,9 +131,7 @@ export function Field({
       <Label htmlFor={id}>{label}</Label>
       {children({ id, "aria-invalid": Boolean(error), "aria-describedby": describedBy })}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
+        <FieldError name={name} id={`${id}-error`} />
       ) : (
         hint && (
           <p id={`${id}-hint`} className="text-xs text-muted-foreground">
@@ -191,23 +204,34 @@ export function Select({
   hint?: ReactNode;
   value: string;
   onChange: (value: string) => void;
-  options: Record<string, string> | [string, string][];
+  options: Options;
   placeholder?: string | null;
 } & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange" | "name" | "size">) {
-  const entries = Array.isArray(options) ? options : Object.entries(options);
   return (
     <Field label={label} name={name} hint={hint}>
       {(a11y) => (
         <NativeSelect {...a11y} {...props} value={value} onChange={(e) => onChange(e.target.value)}>
-          {placeholder !== null && <NativeSelectOption value="">{placeholder}</NativeSelectOption>}
-          {entries.map(([key, text]) => (
-            <NativeSelectOption key={key} value={key}>
-              {text}
-            </NativeSelectOption>
-          ))}
+          <SelectOptions options={options} placeholder={placeholder} />
         </NativeSelect>
       )}
     </Field>
+  );
+}
+
+type Options = Record<string, string> | [string, string][];
+
+// Options for a NativeSelect, with an empty first option unless `placeholder` is null.
+export function SelectOptions({ options, placeholder }: { options: Options; placeholder: string | null }) {
+  const entries = Array.isArray(options) ? options : Object.entries(options);
+  return (
+    <>
+      {placeholder !== null && <NativeSelectOption value="">{placeholder}</NativeSelectOption>}
+      {entries.map(([key, text]) => (
+        <NativeSelectOption key={key} value={key}>
+          {text}
+        </NativeSelectOption>
+      ))}
+    </>
   );
 }
 
@@ -244,7 +268,6 @@ export function CheckboxGroup<K extends string>({
   value: K[];
   onChange: (value: K[]) => void;
 }) {
-  const error = useFieldError(name);
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="mb-1.5 text-sm font-medium">{label}</legend>
@@ -258,7 +281,7 @@ export function CheckboxGroup<K extends string>({
           />
         ))}
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <FieldError name={name} />
     </fieldset>
   );
 }
@@ -288,7 +311,7 @@ export function TagInput({
   const full = max !== undefined && value.length >= max;
 
   function add(raw: string) {
-    const tag = raw.trim().replace(/\s+/g, " ");
+    const tag = cleanName(raw);
     if (!tag || full || value.some((v) => v.toLowerCase() === tag.toLowerCase())) return;
     onChange([...value, tag]);
     setDraft("");
@@ -382,7 +405,7 @@ export function ListEditor<T>({
       {items.length === 0 && <p className="text-sm text-muted-foreground">{empty}</p>}
       {items.map((item, i) => (
         <div key={i} className="flex flex-col gap-4 rounded-xl border p-4">
-          {renderItem(item, (patch) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it))), i)}
+          {renderItem(item, (patch) => onChange(updateAt(items, i, patch)), i)}
           <Button
             type="button"
             variant="link"

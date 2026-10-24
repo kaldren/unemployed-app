@@ -83,11 +83,11 @@ const optionalUrl = z
   .trim()
   .transform((v) => v || null)
   .pipe(z.url({ protocol: /^https?$/, error: "Enter a full link starting with https://" }).nullable());
-const optionalEnum = <T extends z.ZodEnum>(e: T) =>
-  z.union([z.literal("").transform(() => null), e]).nullable();
+const blankAsNull = <T extends z.ZodType>(schema: T) =>
+  z.union([z.literal("").transform(() => null), schema]).nullable();
 const month = z.string().regex(/^\d{4}-\d{2}$/, "Pick a month");
 const year = z.coerce.number().int().min(1950).max(2100);
-const optionalYear = z.union([z.literal("").transform(() => null), year]).nullable();
+const optionalYear = blankAsNull(year);
 const domain = z
   .string()
   .trim()
@@ -114,29 +114,29 @@ export const preferencesSchema = z.object({
     .array(requiredText(80, "Role can't be empty"))
     .min(1, "Pick at least one role")
     .max(MAX_ROLES, `Pick up to ${MAX_ROLES} roles`),
-  seniority: optionalEnum(seniority),
+  seniority: blankAsNull(seniority),
   workModes: z.array(workMode).min(1, "Pick at least one work mode"),
   employmentTypes: z.array(employmentType),
-  salaryMin: z
-    .union([z.literal("").transform(() => null), z.coerce.number().int().min(0).max(10_000_000)])
-    .nullable(),
+  salaryMin: blankAsNull(z.coerce.number().int().min(0).max(10_000_000)),
   salaryCurrency: z.enum(CURRENCIES).nullable(),
-  availableFrom: optionalEnum(z.enum(keys(AVAILABILITY))),
-  jobSearchStatus: optionalEnum(z.enum(keys(JOB_SEARCH_STATUS))),
+  availableFrom: blankAsNull(z.enum(keys(AVAILABILITY))),
+  jobSearchStatus: blankAsNull(z.enum(keys(JOB_SEARCH_STATUS))),
   openToRelocation: z.boolean(),
   workAuthorization: optionalText(200),
-});
+})
+  // A currency only means something next to a salary.
+  .transform((p) => ({ ...p, salaryCurrency: p.salaryMin === null ? null : p.salaryCurrency }));
 
 export const experienceSchema = z
   .object({
     companyName: requiredText(120, "Add the company name"),
-    companyDomain: z.union([z.literal("").transform(() => null), domain]).nullable(),
+    companyDomain: blankAsNull(domain),
     title: requiredText(120, "Add your job title"),
-    employmentType: optionalEnum(employmentType),
+    employmentType: blankAsNull(employmentType),
     location: optionalText(120),
     isRemote: z.boolean(),
     startMonth: month,
-    endMonth: z.union([z.literal("").transform(() => null), month]).nullable(),
+    endMonth: blankAsNull(month),
     description: optionalText(DESCRIPTION_MAX),
   })
   .refine((e) => !e.endMonth || e.endMonth >= e.startMonth, {
@@ -154,8 +154,8 @@ export const skillsSchema = z.object({
     .array(
       z.object({
         name: requiredText(60, "Skill can't be empty"),
-        level: optionalEnum(skillLevel),
-        years: z.union([z.literal("").transform(() => null), z.coerce.number().int().min(0).max(MAX_SKILL_YEARS)]).nullable(),
+        level: blankAsNull(skillLevel),
+        years: blankAsNull(z.coerce.number().int().min(0).max(MAX_SKILL_YEARS)),
       }),
     )
     .max(MAX_SKILLS, `Add up to ${MAX_SKILLS} skills`),
@@ -205,11 +205,10 @@ export const languagesSchema = z.object({
 });
 
 export const privacySchema = z.object({
-  hiddenCompanyDomains: z.array(domain).max(MAX_HIDDEN_DOMAINS),
+  hiddenCompanyDomains: z.array(domain).max(MAX_HIDDEN_DOMAINS).transform((list) => [...new Set(list)]),
 });
 
 export type AboutInput = z.input<typeof aboutSchema>;
-export type PreferencesInput = z.input<typeof preferencesSchema>;
 export type ExperienceInput = z.input<typeof experienceSchema>;
 export type SkillInput = z.input<typeof skillsSchema>["skills"][number];
 export type EducationInput = z.input<typeof educationsSchema>["educations"][number];

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { COUNTRIES, LANGUAGES } from "@/lib/candidate/locales";
 import { MIN_SKILLS } from "@/lib/candidate/completeness";
 import {
@@ -45,13 +45,15 @@ import {
 import {
   Checkbox,
   CheckboxGroup,
+  FieldError,
   ListEditor,
   SectionForm,
   Select,
+  SelectOptions,
   TagInput,
   TextArea,
   TextInput,
-  useFieldError,
+  updateAt,
 } from "./ui";
 
 // Form state is all strings/booleans; the server schemas turn "" into null.
@@ -361,7 +363,7 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
           </thead>
           <tbody>
             {items.map((s, i) => {
-              const update = (patch: Partial<SkillState>) => setItems(items.map((it, j) => (j === i ? { ...it, ...patch } : it)));
+              const update = (patch: Partial<SkillState>) => setItems(updateAt(items, i, patch));
               return (
                 <tr key={s.name} className="border-t border-border">
                   <td className="py-2 pr-3 font-medium">{s.name}</td>
@@ -371,12 +373,7 @@ export function SkillsSection({ initial, suggestions }: { initial: SkillState[];
                       value={s.level}
                       onChange={(e) => update({ level: e.target.value })}
                     >
-                      <NativeSelectOption value="">—</NativeSelectOption>
-                      {Object.entries(SKILL_LEVELS).map(([k, label]) => (
-                        <NativeSelectOption key={k} value={k}>
-                          {label}
-                        </NativeSelectOption>
-                      ))}
+                      <SelectOptions options={SKILL_LEVELS} placeholder="—" />
                     </NativeSelect>
                   </td>
                   <td className="py-2">
@@ -491,7 +488,7 @@ export function LanguagesSection({ initial }: { initial: LanguageState[] }) {
           </div>
         )}
       />
-      <FormError name="languages" />
+      <FieldError name="languages" />
     </SectionForm>
   );
 }
@@ -517,9 +514,4 @@ export function PrivacySection({ initial, suggestions }: { initial: string[]; su
       />
     </SectionForm>
   );
-}
-
-function FormError({ name }: { name: string }) {
-  const error = useFieldError(name);
-  return error ? <p className="text-sm text-destructive">{error}</p> : null;
 }

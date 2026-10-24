@@ -13,10 +13,9 @@ const CANDIDATE_TABLES = [
 // Removes everything the test user added to their candidate profile.
 export async function resetCandidate(userId: string) {
   const supabase = admin();
-  for (const table of CANDIDATE_TABLES) {
-    const { error } = await supabase.from(table).delete().eq("profile_id", userId);
-    if (error) throw error;
-  }
+  // Every table references profiles directly, so the deletes are independent.
+  const results = await Promise.all(CANDIDATE_TABLES.map((table) => supabase.from(table).delete().eq("profile_id", userId)));
+  for (const { error } of results) if (error) throw error;
 }
 
 // Gives the test user a profile complete enough to skip the /profile redirect.

@@ -6,6 +6,7 @@ import { requireCandidate } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { COMPLETENESS_STEPS, getMissingItems, type ProfileSection } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
+import { cn } from "@/lib/utils";
 import { DEFAULT_CURRENCY } from "@/lib/candidate/schemas";
 import { SectionTabs, type Tab } from "./section-tabs";
 import {
@@ -184,7 +185,7 @@ async function ProfileEditor() {
                 className="h-1 flex-1 overflow-hidden rounded-full bg-muted"
               >
                 <div
-                  className={`h-full rounded-full transition-[width] ${missing.length === 0 ? "bg-success" : "bg-brand"}`}
+                  className={cn("h-full rounded-full transition-[width]", missing.length === 0 ? "bg-success" : "bg-brand")}
                   style={{ width: `${(done / COMPLETENESS_STEPS) * 100}%` }}
                 />
               </div>

@@ -27,7 +27,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
           <p className="text-base text-muted-foreground">{SITE_TAGLINE}</p>
         </div>
         {/* searchParams are request data, so they stream in behind a boundary. */}
-        <Suspense fallback={<GoogleButton />}>
+        <Suspense fallback={<GoogleButton disabled />}>
           <SignInOptions searchParams={searchParams} />
         </Suspense>
       </div>

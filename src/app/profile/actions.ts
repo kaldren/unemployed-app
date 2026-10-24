@@ -128,7 +128,7 @@ async function replaceLanguages(tx: Tx, profileId: string, list: z.output<typeof
 export const saveAbout = sectionAction(aboutSchema, (tx, id, data) => updateProfile(tx, id, data));
 
 export const savePreferences = sectionAction(preferencesSchema, async (tx, id, { roles, ...prefs }) => {
-  await updateProfile(tx, id, { ...prefs, salaryCurrency: prefs.salaryMin === null ? null : prefs.salaryCurrency });
+  await updateProfile(tx, id, prefs);
   await replaceRoles(tx, id, roles);
 });
 
@@ -151,9 +151,7 @@ export const saveLanguages = sectionAction(languagesSchema, (tx, id, data) =>
   replaceLanguages(tx, id, data.languages),
 );
 
-export const savePrivacy = sectionAction(privacySchema, (tx, id, data) =>
-  updateProfile(tx, id, { hiddenCompanyDomains: [...new Set(data.hiddenCompanyDomains)] }),
-);
+export const savePrivacy = sectionAction(privacySchema, (tx, id, data) => updateProfile(tx, id, data));
 
 // Resume import is hidden for now (see DECISIONS.md); the action stays callable by ID, so refuse it.
 const RESUME_IMPORT_ENABLED = false;

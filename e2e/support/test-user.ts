@@ -1,6 +1,7 @@
 import type { BrowserContext } from "@playwright/test";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import { supabaseEnv } from "../../src/lib/env";
 
 // Google blocks automated logins, so signed-in tests use a dedicated email user
 // whose session is minted with the admin API and written into the browser as cookies.
@@ -9,8 +10,7 @@ export const TEST_USER = {
   fullName: "E2E Candidate",
 };
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const { url, anonKey } = supabaseEnv();
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const hasServiceRoleKey = Boolean(serviceRoleKey);

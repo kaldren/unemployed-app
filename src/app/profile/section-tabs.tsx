@@ -49,19 +49,18 @@ export function SectionTabs({ groups, initial }: { groups: { label?: string; tab
 
   function onKeyDown(e: KeyboardEvent) {
     const i = tabs.findIndex((t) => t.id === active);
-    const next =
-      e.key === "ArrowDown" || e.key === "ArrowRight"
-        ? (i + 1) % tabs.length
-        : e.key === "ArrowUp" || e.key === "ArrowLeft"
-          ? (i - 1 + tabs.length) % tabs.length
-          : e.key === "Home"
-            ? 0
-            : e.key === "End"
-              ? tabs.length - 1
-              : null;
-    if (next === null) return;
+    const targets: Record<string, number> = {
+      ArrowDown: i + 1,
+      ArrowRight: i + 1,
+      ArrowUp: i - 1,
+      ArrowLeft: i - 1,
+      Home: 0,
+      End: tabs.length - 1,
+    };
+    const target = targets[e.key];
+    if (target === undefined) return;
     e.preventDefault();
-    select(tabs[next].id, true);
+    select(tabs[(target + tabs.length) % tabs.length].id, true);
   }
 
   return (

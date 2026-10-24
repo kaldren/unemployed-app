@@ -32,7 +32,7 @@ describe("getMissingItems", () => {
 
   it("needs experience unless the candidate has none", () => {
     const data = { ...complete, profile: { ...complete.profile!, noExperience: false } };
-    expect(getMissingItems(data)).toEqual([{ label: "Work experience", section: "experience" }]);
+    expect(getMissingItems(data)).toEqual([{ section: "experience" }]);
   });
 
   it("needs the minimum number of skills", () => {

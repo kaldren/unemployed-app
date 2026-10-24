@@ -251,4 +251,3 @@ export const LANGUAGES: [string, string][] = [
   ["vi", "Vietnamese"],
 ];
 
-export const countryName = (code: string) => COUNTRIES.find(([c]) => c === code)?.[1] ?? code;
