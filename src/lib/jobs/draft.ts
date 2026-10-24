@@ -14,12 +14,14 @@ export function jobDraftModel() {
 const SYSTEM = `You write job posts for a hiring platform, for the employer to review and edit.
 Write in plain, warm, specific language. No buzzwords, no emoji, no markdown headings or bold.
 "title": a short, standard job title without seniority or company name ("Backend Engineer").
-"description": 150-400 words of plain text. Start with two or three sentences about the role,
+"description": plain text, 150-400 words for a new post. Start with two or three sentences about the role,
 then short sections "What you'll do" and "What you'll bring", each a few lines starting with "- ".
 Separate paragraphs and sections with blank lines.
 "skills": 5-12 short canonical skill names ("React", "PostgreSQL", "Stakeholder management"),
 most important first.
-Only state facts the employer gave you about the company, pay or benefits; don't invent them.`;
+Only state facts the employer gave you about the company, pay or benefits; don't invent them.
+When asked to change an existing post, apply the change fully, even if it changes the length or
+structure ("shorter" means clearly shorter), and leave everything the change doesn't touch alone.`;
 
 export class JobDraftError extends Error {}
 

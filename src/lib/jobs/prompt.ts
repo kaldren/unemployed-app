@@ -33,7 +33,7 @@ export function buildDraftPrompt(request: DraftRequest): string {
     "The employer wants this changed:",
     instruction,
     "",
-    "Rewrite the job post with that change. Keep everything else as it is.",
+    "Rewrite the job post with that change.",
   ].join("\n");
 }
 
