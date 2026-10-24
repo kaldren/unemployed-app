@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
+import { HOME_PATH } from "@/lib/portal";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
 
 async function Welcome() {
   const user = await getCurrentUser();
+  if (user.type === "employer") redirect(HOME_PATH.employer);
   // Candidates can't be matched until their profile is complete.
   if (user.type === "candidate" && getMissingItems(await getCandidateProfile(user.id)).length > 0) {
     redirect("/profile");
@@ -33,11 +35,9 @@ async function Welcome() {
           </h1>
           <p className="text-base break-all text-muted-foreground">{user.email}</p>
         </div>
-        {user.type === "candidate" && (
-          <Button asChild size="lg">
-            <Link href="/profile">Edit your profile</Link>
-          </Button>
-        )}
+        <Button asChild size="lg">
+          <Link href="/profile">Edit your profile</Link>
+        </Button>
       </main>
     </>
   );

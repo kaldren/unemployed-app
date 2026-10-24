@@ -274,6 +274,55 @@ export const candidateRoles = pgTable(
   ],
 ).enableRLS();
 
+// ---------- Companies ----------
+
+// `pending` until vetted; jobs go live only when `approved`.
+export const companyStatus = pgEnum("company_status", ["pending", "approved", "needs_review", "rejected"]);
+export const companyRole = pgEnum("company_role", ["owner", "member"]);
+
+// The email domain is the company: the first employer from a domain creates it.
+// Written only by the server (Drizzle). RLS lets members read their own company.
+export const companies = pgTable(
+  "companies",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    domain: text().notNull().unique(), // lowercase, e.g. "acme.com"
+    name: text().notNull(),
+    status: companyStatus().notNull().default("pending"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("domain_lowercase", sql`${t.domain} = lower(${t.domain})`),
+    pgPolicy("Members can read their company", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from company_members m where m.company_id = ${t.id} and m.profile_id = (select auth.uid()))`,
+    }),
+  ],
+).enableRLS();
+
+// An employer belongs to exactly one company: the one for their email domain.
+export const companyMembers = pgTable(
+  "company_members",
+  {
+    profileId: profileId().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    role: companyRole().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("company_members_company_id_idx").on(t.companyId),
+    pgPolicy("Employers can read their own membership", {
+      for: "select",
+      to: authenticatedRole,
+      using: ownsRow,
+    }),
+  ],
+).enableRLS();
+
+export type Company = typeof companies.$inferSelect;
 export type CandidateProfile = typeof candidateProfiles.$inferSelect;
 export type Experience = typeof experiences.$inferSelect;
 export type Education = typeof educations.$inferSelect;

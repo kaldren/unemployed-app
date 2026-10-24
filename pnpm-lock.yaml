@@ -184,6 +184,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(@opentelemetry/api@1.10.0)(postgres@3.4.9)
+      free-email-domains:
+        specifier: ^1.15.12
+        version: 1.15.12
       lucide-react:
         specifier: ^1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.0)
@@ -3223,6 +3226,10 @@ packages:
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
+
+  free-email-domains@1.15.12:
+    resolution: {integrity: sha512-1p9ItDi4ify7sql1Pj7hb8L3uQQw2tRZ47SEL2jWlbCDrrboG+hzTRhLycJxP2PhpZWmZS7MbC8VBcLasIDu4g==}
+    engines: {node: '>= 18'}
 
   fresh@2.0.0:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
@@ -7756,6 +7763,8 @@ snapshots:
       is-callable: 1.2.7
 
   forwarded@0.2.0: {}
+
+  free-email-domains@1.15.12: {}
 
   fresh@2.0.0: {}
 

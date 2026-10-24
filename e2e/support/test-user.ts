@@ -21,12 +21,12 @@ export function admin() {
   });
 }
 
-async function getOrCreateUserId(): Promise<string> {
+export async function getOrCreateUserId({ email, fullName }: { email: string; fullName: string } = TEST_USER) {
   const supabase = admin();
   const { data, error } = await supabase.auth.admin.createUser({
-    email: TEST_USER.email,
+    email,
     email_confirm: true,
-    user_metadata: { full_name: TEST_USER.fullName },
+    user_metadata: { full_name: fullName },
   });
   if (data.user) return data.user.id;
   if (error?.code !== "email_exists") throw error;
@@ -36,9 +36,9 @@ async function getOrCreateUserId(): Promise<string> {
   for (let page = 1; ; page++) {
     const { data: list, error: listError } = await supabase.auth.admin.listUsers({ page, perPage });
     if (listError) throw listError;
-    const user = list.users.find((u) => u.email === TEST_USER.email);
+    const user = list.users.find((u) => u.email === email);
     if (user) return user.id;
-    if (list.users.length < perPage) throw new Error(`Test user ${TEST_USER.email} not found`);
+    if (list.users.length < perPage) throw new Error(`Test user ${email} not found`);
   }
 }
 
@@ -55,16 +55,17 @@ export async function setProfile(userId: string, exists: boolean) {
   if (error) throw error;
 }
 
+// A one-time token for a magic link to `email`, as /auth/callback?token_hash=… accepts it.
+export async function magicLinkTokenHash(email: string) {
+  const { data, error } = await admin().auth.admin.generateLink({ type: "magiclink", email });
+  if (error) throw error;
+  return data.properties.hashed_token;
+}
+
 // Signs the test user into the browser context. Returns the user id.
 export async function signIn(context: BrowserContext, { withProfile = true } = {}) {
   const userId = await getOrCreateUserId();
   await setProfile(userId, withProfile);
-
-  const { data: link, error: linkError } = await admin().auth.admin.generateLink({
-    type: "magiclink",
-    email: TEST_USER.email,
-  });
-  if (linkError) throw linkError;
 
   // Let @supabase/ssr write the session, so the cookies match what the app expects.
   const cookies: { name: string; value: string }[] = [];
@@ -82,7 +83,7 @@ export async function signIn(context: BrowserContext, { withProfile = true } = {
   });
   const { error } = await supabase.auth.verifyOtp({
     type: "magiclink",
-    token_hash: link.properties.hashed_token,
+    token_hash: await magicLinkTokenHash(TEST_USER.email),
   });
   if (error) throw error;
 
