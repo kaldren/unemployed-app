@@ -30,7 +30,8 @@ if (created.error && created.error.code !== "email_exists") throw created.error;
 
 // The link also tells us the user's id, whether they were just created or already existed.
 const { data: link } = check(await supabase.auth.admin.generateLink({ type: "magiclink", email: DEMO.email }));
-const userId = link!.user.id;
+const { user, properties } = link as { user: { id: string }; properties: { hashed_token: string } };
+const userId = user.id;
 
 check(
   await supabase.from("profiles").upsert({ id: userId, type: "employer", email: DEMO.email, full_name: DEMO.fullName }),
@@ -47,5 +48,5 @@ check(await supabase.from("company_members").upsert({ profile_id: userId, compan
 const signIn = new URL("/auth/callback", process.argv[2] ?? "http://localhost:3000");
 signIn.searchParams.set("portal", "employer");
 signIn.searchParams.set("type", "magiclink");
-signIn.searchParams.set("token_hash", link!.properties.hashed_token);
+signIn.searchParams.set("token_hash", properties.hashed_token);
 console.log(`${DEMO.email} owns ${COMPANY.name} (approved). Open this link to sign in:\n${signIn}`);
