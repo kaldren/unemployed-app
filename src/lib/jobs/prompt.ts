@@ -2,10 +2,11 @@ import { EMPLOYMENT_TYPES, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas
 import { cleanName, normalizeSlug } from "@/lib/candidate/slug";
 import { JOB_DESCRIPTION_MAX, JOB_SKILL_MAX, JOB_SKILLS_MAX, JOB_TITLE_MAX, type JobDraft, type RoleType } from "./schemas";
 
-export type DraftRequest = {
-  companyName: string;
-  roleType: RoleType;
-} & ({ brief: string } | { current: JobDraft; instruction: string });
+// A new post keeps any role type the employer already chose; a refine sends the post on screen.
+export type DraftRequest = { companyName: string } & (
+  | { roleType: RoleType; brief: string }
+  | { current: Omit<JobDraft, keyof RoleType> & RoleType; instruction: string }
+);
 
 function roleTypeLines({ seniority, employmentType, workMode }: RoleType) {
   return [
@@ -16,16 +17,26 @@ function roleTypeLines({ seniority, employmentType, workMode }: RoleType) {
 }
 
 export function buildDraftPrompt(request: DraftRequest): string {
-  const lines = [`Company: ${request.companyName}`, ...roleTypeLines(request.roleType)];
+  const company = `Company: ${request.companyName}`;
   if ("brief" in request) {
-    return [...lines, "", "The employer describes the role:", request.brief, "", "Write the job post."].join("\n");
+    const chosen = roleTypeLines(request.roleType);
+    return [
+      company,
+      ...(chosen.length ? ["", "The employer chose:", ...chosen] : []),
+      "",
+      "The employer describes the role:",
+      request.brief,
+      "",
+      "Write the job post.",
+    ].join("\n");
   }
   const { current, instruction } = request;
   return [
-    ...lines,
+    company,
     "",
     "The current job post:",
     `Title: ${current.title}`,
+    ...roleTypeLines(current),
     `Skills: ${current.skills.join(", ")}`,
     "Description:",
     current.description,
@@ -50,8 +61,19 @@ export function clampDraft(draft: JobDraft): JobDraft {
     if (skills.length === JOB_SKILLS_MAX) break;
   }
   return {
+    ...draft,
     title: draft.title.trim().slice(0, JOB_TITLE_MAX).trimEnd(),
     description: draft.description.trim().slice(0, JOB_DESCRIPTION_MAX).trimEnd(),
     skills,
+  };
+}
+
+// The AI fills in whatever the employer left blank on a new post; their own choices stay.
+export function keepChosenRoleType(chosen: RoleType, draft: JobDraft): JobDraft {
+  return {
+    ...draft,
+    seniority: chosen.seniority ?? draft.seniority,
+    employmentType: chosen.employmentType ?? draft.employmentType,
+    workMode: chosen.workMode ?? draft.workMode,
   };
 }

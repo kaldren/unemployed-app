@@ -27,7 +27,14 @@ export const newJobSchema = roleTypeSchema.extend({
   brief: z.string().trim().max(JOB_BRIEF_MAX, `Keep it under ${JOB_BRIEF_MAX} characters`),
 });
 
-export const jobSchema = roleTypeSchema.extend({
+// Every saved post has a role type; the new-job form may leave blanks for the AI to fill.
+const requiredEnum = <T extends Record<string, string>>(options: T, message: string) =>
+  z.enum(keys(options), { error: message });
+
+export const jobSchema = z.object({
+  seniority: requiredEnum(SENIORITY, "Pick a seniority"),
+  employmentType: requiredEnum(EMPLOYMENT_TYPES, "Pick an employment type"),
+  workMode: requiredEnum(WORK_MODES, "Pick a work mode"),
   title: z.string().trim().min(1, "Add a job title").max(JOB_TITLE_MAX),
   description: z.string().trim().max(JOB_DESCRIPTION_MAX, `Keep it under ${JOB_DESCRIPTION_MAX} characters`),
   skills: skillsList,
@@ -44,9 +51,12 @@ export const refineSchema = z.object({
 
 export type RoleType = z.output<typeof roleTypeSchema>;
 
-// What the AI writes. The employer picks the role type themselves.
+// What the AI writes, role type included: it always picks one, and the employer can change it.
 export const jobDraftSchema = z.object({
   title: z.string(),
+  seniority: z.enum(keys(SENIORITY)),
+  employmentType: z.enum(keys(EMPLOYMENT_TYPES)),
+  workMode: z.enum(keys(WORK_MODES)),
   description: z.string(),
   skills: z.array(z.string()),
 });

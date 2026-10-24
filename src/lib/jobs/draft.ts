@@ -17,6 +17,8 @@ Write in plain, warm, specific language. No buzzwords, no emoji, no markdown hea
 "description": plain text, 150-400 words for a new post. Start with two or three sentences about the role,
 then short sections "What you'll do" and "What you'll bring", each a few lines starting with "- ".
 Separate paragraphs and sections with blank lines.
+"seniority", "employmentType", "workMode": always pick one. Keep any the employer chose; otherwise
+infer the best fit from the brief, and when it gives no hint pick the most common choice for such a role.
 "skills": 5-12 short canonical skill names ("React", "PostgreSQL", "Stakeholder management"),
 most important first.
 Only state facts the employer gave you about the company, pay or benefits; don't invent them.

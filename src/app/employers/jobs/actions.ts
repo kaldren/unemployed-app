@@ -11,8 +11,8 @@ import { ensureSkills, type Tx } from "@/lib/candidate/catalog";
 import { toActionError, type ActionState } from "@/lib/candidate/schemas";
 import { normalizeSlug } from "@/lib/candidate/slug";
 import { isAiConfigured, writeJobDraft } from "@/lib/jobs/draft";
-import type { DraftRequest } from "@/lib/jobs/prompt";
-import { jobSchema, newJobSchema, refineSchema, type JobDraft } from "@/lib/jobs/schemas";
+import { keepChosenRoleType, type DraftRequest } from "@/lib/jobs/prompt";
+import { jobSchema, newJobSchema, refineSchema, type JobDraft, type RoleType } from "@/lib/jobs/schemas";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
 const JOB_GONE = "This job no longer exists.";
@@ -59,12 +59,12 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
   if (!parsed.success) return toActionError(parsed.error);
   const { brief, ...roleType } = parsed.data;
 
-  let draft: JobDraft = { title: "", description: "", skills: [] };
+  let draft: Omit<JobDraft, keyof RoleType> & RoleType = { ...roleType, title: "", description: "", skills: [] };
   if (formData.get("mode") === "ai") {
     if (!brief) return { status: "error", message: "Tell us about the role first", fieldErrors: { brief: "Tell us about the role first" } };
     const result = await draftOrError({ companyName: user.company.name, roleType, brief });
     if ("status" in result) return result;
-    draft = result;
+    draft = keepChosenRoleType(roleType, result);
   }
 
   const jobId = await db.transaction(async (tx) => {
@@ -73,7 +73,9 @@ export async function createJob(_prev: ActionState, formData: FormData): Promise
       .values({
         companyId: user.company.id,
         createdBy: user.id,
-        ...roleType,
+        seniority: draft.seniority,
+        employmentType: draft.employmentType,
+        workMode: draft.workMode,
         title: draft.title,
         description: draft.description,
         brief: brief || null,
@@ -126,14 +128,8 @@ export async function refineJob(_prev: RefineState, formData: FormData): Promise
   if (!parsed) return { status: "error", message: GENERIC_ERROR };
   if (!parsed.success) return toActionError(parsed.error) as RefineState;
   const { instruction, job } = parsed.data;
-  const { title, description, skills, ...roleType } = job;
 
-  const result = await draftOrError({
-    companyName: user.company.name,
-    roleType,
-    current: { title, description, skills },
-    instruction,
-  });
+  const result = await draftOrError({ companyName: user.company.name, current: job, instruction });
   if ("status" in result) return result as RefineState;
   return { status: "refined", at: Date.now(), draft: result };
 }

@@ -61,7 +61,7 @@ test("an employer writes a job post by hand, saves it and sees it in the list", 
   await expect(job).toContainText("Senior · Full-time · Remote");
 });
 
-test("a job title is required", async ({ page }) => {
+test("a job title and role type are required", async ({ page }) => {
   await signInFresh(page);
   await page.goto("/employers/jobs/new");
   await page.getByRole("button", { name: "Write it myself" }).click();
@@ -71,6 +71,14 @@ test("a job title is required", async ({ page }) => {
   await page.getByRole("button", { name: "Save" }).click();
   await expect(field(page, "Job title")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("Add a job title").first()).toBeVisible();
+  for (const [label, message] of [
+    ["Seniority", "Pick a seniority"],
+    ["Employment type", "Pick an employment type"],
+    ["Work mode", "Pick a work mode"],
+  ]) {
+    await expect(field(page, label)).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByText(message).first()).toBeVisible();
+  }
 });
 
 test("jobs that don't belong to the company are not found", async ({ page }) => {
@@ -99,6 +107,10 @@ test.describe("with AI", () => {
 
     await expect(page).toHaveURL(JOB_URL, { timeout: 60_000 });
     await expect(field(page, "Job title")).not.toHaveValue("");
+    // The AI picks what the employer left blank and keeps what they chose.
+    await expect(field(page, "Seniority")).toHaveValue("mid");
+    await expect(field(page, "Employment type")).not.toHaveValue("");
+    await expect(field(page, "Work mode")).not.toHaveValue("");
     await expect(field(page, "Description")).not.toHaveValue("");
     await expect(page.getByRole("list", { name: "Selected skills" }).getByRole("listitem").first()).toBeVisible();
 

@@ -5,7 +5,7 @@ import { EMPLOYMENT_TYPES, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas
 
 export type RoleTypeState = { seniority: string; employmentType: string; workMode: string };
 
-// The kind of role: chosen by the employer, never by the AI.
+// The kind of role. On a new post, blanks are left for the AI to pick.
 export function RoleTypeFields({ value, onChange }: { value: RoleTypeState; onChange: (patch: Partial<RoleTypeState>) => void }) {
   return (
     <div className="grid gap-5 sm:grid-cols-3">

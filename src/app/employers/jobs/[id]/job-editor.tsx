@@ -72,7 +72,7 @@ function RefineCard({
   onRefined,
 }: {
   job: JobState;
-  onRefined: (draft: Pick<JobState, "title" | "description" | "skills">) => void;
+  onRefined: (draft: JobState) => void;
 }) {
   const [instruction, setInstruction] = useState("");
   const [state, formAction, pending] = useActionState(
