@@ -3,6 +3,7 @@
 Choices Claude made without asking, newest first. One line each: date, decision, why.
 Overrule any of them by saying so; Claude then updates the code and this log.
 
+- 2026-10-24 — Job drafting model comes from `JOB_DRAFT_MODEL` (server env only, no UI), defaulting to `claude-haiku-5-5`.
 - 2026-10-24 — Job posts v1: employer picks seniority / employment type / work mode, writes a brief; Claude Haiku 5.5 drafts title, description (plain text) and skills. "Refine with AI" rewrites what's on screen without saving. "Write it myself" makes an empty draft. All jobs stay `draft` (no publish yet). Skills go through the shared `skills` catalog via `job_skills` (ordered by `position`), ready for matching. AI controls are hidden/disabled when `ANTHROPIC_API_KEY` is unset.
 - 2026-10-24 — Forms cancel React's post-action form reset (`onResetCapture={keepValuesOnReset}`) and use `noValidate`: the reset showed selects as "Select…" and unchecked Radix checkboxes after every save; native validation blocked submits (e.g. `type="url"`) before our server errors could show. Fixes the two failing profile e2e tests.
 - 2026-10-24 — Employer auth: magic link + Google on `/employers/login`; `?portal=employer` on `/auth/callback` picks the profile type. Free-mail check uses `free-email-domains` (also covers disposable domains). Company name starts as the domain's first label ("acme-labs.com" → "Acme Labs"); subdomains are separate companies for now. New companies are `pending` until vetting exists.

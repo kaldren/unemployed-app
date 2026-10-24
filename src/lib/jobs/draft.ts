@@ -4,7 +4,12 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { buildDraftPrompt, clampDraft, type DraftRequest } from "./prompt";
 import { jobDraftSchema, type JobDraft } from "./schemas";
 
-const MODEL = "claude-haiku-5-5";
+// Server-only setting: set JOB_DRAFT_MODEL to switch models without a code change.
+export const DEFAULT_JOB_DRAFT_MODEL = "claude-haiku-5-5";
+
+export function jobDraftModel() {
+  return process.env.JOB_DRAFT_MODEL?.trim() || DEFAULT_JOB_DRAFT_MODEL;
+}
 
 const SYSTEM = `You write job posts for a hiring platform, for the employer to review and edit.
 Write in plain, warm, specific language. No buzzwords, no emoji, no markdown headings or bold.
@@ -26,7 +31,7 @@ export function isAiConfigured() {
 export async function writeJobDraft(request: DraftRequest): Promise<JobDraft> {
   const client = new Anthropic();
   const response = await client.messages.parse({
-    model: MODEL,
+    model: jobDraftModel(),
     max_tokens: 4000,
     output_config: { effort: "low", format: zodOutputFormat(jobDraftSchema) },
     system: SYSTEM,
