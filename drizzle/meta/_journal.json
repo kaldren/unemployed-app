@@ -50,6 +50,13 @@
       "when": 1792824196723,
       "tag": "0006_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792829553887,
+      "tag": "0007_swipes",
+      "breakpoints": true
     }
   ]
 }

@@ -390,6 +390,54 @@ export const jobSkills = pgTable(
   ],
 ).enableRLS();
 
+// ---------- Swipes ----------
+
+// A candidate's like or pass on a job. A like from both sides is a match.
+// Written only by the server (Drizzle). RLS lets candidates read their own swipes.
+export const candidateSwipes = pgTable(
+  "candidate_swipes",
+  {
+    profileId: profileId(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    liked: boolean().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.profileId, t.jobId] }),
+    index("candidate_swipes_job_id_idx").on(t.jobId),
+    pgPolicy("Candidates can read their own swipes", { for: "select", to: authenticatedRole, using: ownsRow }),
+  ],
+).enableRLS();
+
+// An employer's like or pass on a candidate for one of their company's jobs.
+export const employerSwipes = pgTable(
+  "employer_swipes",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    candidateId: uuid("candidate_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    // The employer candidates contact after a match.
+    decidedBy: uuid("decided_by").references(() => profiles.id, { onDelete: "set null" }),
+    liked: boolean().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.candidateId] }),
+    index("employer_swipes_candidate_id_idx").on(t.candidateId),
+    index("employer_swipes_decided_by_idx").on(t.decidedBy),
+    pgPolicy("Members can read their company's swipes", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from jobs j where j.id = ${t.jobId} and ${isCompanyMember(sql`j.company_id`)})`,
+    }),
+  ],
+).enableRLS();
+
 export type Job = typeof jobs.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type CandidateProfile = typeof candidateProfiles.$inferSelect;

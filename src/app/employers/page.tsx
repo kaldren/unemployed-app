@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireEmployer } from "@/lib/auth";
-import { EMPLOYMENT_TYPES, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
+import { roleTypeLabel } from "@/lib/jobs/labels";
 import { listJobs } from "@/lib/jobs/queries";
 import { JOB_STATUS } from "@/lib/jobs/schemas";
 
@@ -74,7 +74,7 @@ async function Jobs() {
                           <span className="text-base font-medium">{job.title || "Untitled job"}</span>
                           <Badge variant="secondary">{STATUS_LABELS[job.status]}</Badge>
                         </div>
-                        <RoleTypeLine {...job} />
+                        {roleTypeLabel(job) && <p className="text-sm text-muted-foreground">{roleTypeLabel(job)}</p>}
                       </div>
                     </Link>
                   </Card>
@@ -86,21 +86,4 @@ async function Jobs() {
       </main>
     </>
   );
-}
-
-function RoleTypeLine({
-  seniority,
-  employmentType,
-  workMode,
-}: {
-  seniority: keyof typeof SENIORITY | null;
-  employmentType: keyof typeof EMPLOYMENT_TYPES | null;
-  workMode: keyof typeof WORK_MODES | null;
-}) {
-  const parts = [
-    seniority && SENIORITY[seniority],
-    employmentType && EMPLOYMENT_TYPES[employmentType],
-    workMode && WORK_MODES[workMode],
-  ].filter(Boolean);
-  return parts.length > 0 ? <p className="text-sm text-muted-foreground">{parts.join(" · ")}</p> : null;
 }

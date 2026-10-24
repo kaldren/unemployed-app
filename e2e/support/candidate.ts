@@ -8,6 +8,7 @@ const CANDIDATE_TABLES = [
   "candidate_languages",
   "candidate_skills",
   "candidate_roles",
+  "candidate_swipes",
 ] as const;
 
 // Removes everything the test user added to their candidate profile.

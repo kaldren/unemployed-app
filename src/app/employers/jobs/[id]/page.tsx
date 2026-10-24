@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageLoading } from "@/components/page-loading";
+import { Button } from "@/components/ui/button";
 import { requireEmployer } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { isAiConfigured } from "@/lib/jobs/draft";
@@ -32,7 +34,14 @@ async function Job({ params }: Pick<PageProps<"/employers/jobs/[id]">, "params">
       <AppHeader user={user} />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-2xl flex-col gap-6">
-          <h1 className="text-4xl font-semibold tracking-tight text-balance">{job.title || "Untitled job"}</h1>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h1 className="text-4xl font-semibold tracking-tight text-balance">{job.title || "Untitled job"}</h1>
+            {job.status === "open" && (
+              <Button asChild variant="outline">
+                <Link href={`/employers/jobs/${job.id}/candidates`}>Review candidates</Link>
+              </Button>
+            )}
+          </div>
           <JobEditor
             action={saveJob.bind(null, job.id)}
             aiEnabled={isAiConfigured()}

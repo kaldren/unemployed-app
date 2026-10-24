@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedCompleteCandidate } from "./support/candidate";
-import { hasServiceRoleKey, signIn, TEST_USER } from "./support/test-user";
+import { hasServiceRoleKey, signIn } from "./support/test-user";
 
 const googleButton = (page: import("@playwright/test").Page) =>
   page.getByRole("button", { name: "Continue with Google" });
@@ -33,12 +33,11 @@ test.describe("signed out", () => {
 test.describe("signed in", () => {
   test.skip(!hasServiceRoleKey, "Set SUPABASE_SERVICE_ROLE_KEY in .env.local to run signed-in tests");
 
-  test("home shows the user; /login redirects home", async ({ page, context }) => {
+  test("home shows the job deck; /login redirects home", async ({ page, context }) => {
     await seedCompleteCandidate(await signIn(context));
 
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: `Welcome, ${TEST_USER.fullName}` })).toBeVisible();
-    await expect(page.getByText(TEST_USER.email)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Jobs for you" })).toBeVisible();
 
     await page.goto("/login");
     await expect(page).toHaveURL("/");
