@@ -37,13 +37,6 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   return profile;
 });
 
-// getCurrentUser for candidate-only pages and actions; anyone else goes home.
-export async function requireCandidate(): Promise<CurrentUser> {
-  const user = await getCurrentUser();
-  if (user.type !== "candidate") redirect("/");
-  return user;
-}
-
 // Only allow same-origin relative paths, so `next` can't become an open redirect.
 export function safeNextPath(next: string | null | undefined): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {

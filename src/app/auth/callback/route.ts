@@ -34,14 +34,13 @@ export async function GET(request: NextRequest) {
 
 // First sign-in creates the profile; later sign-ins leave it as is.
 async function createCandidateProfile(user: User) {
-  if (!user.email) throw new Error(`User ${user.id} has no email`);
   const meta = user.user_metadata;
   await db
     .insert(profiles)
     .values({
       id: user.id,
       type: "candidate",
-      email: user.email,
+      email: user.email!,
       fullName: meta.full_name ?? meta.name ?? null,
       avatarUrl: meta.avatar_url ?? meta.picture ?? null,
     })

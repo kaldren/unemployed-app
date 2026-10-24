@@ -43,22 +43,11 @@ export const LANGUAGE_PROFICIENCY = {
   native: "Native",
 } as const;
 export const CURRENCIES = ["EUR", "USD", "GBP", "BGN", "CHF", "PLN", "RON", "CZK", "SEK"] as const;
-export const DEFAULT_CURRENCY: (typeof CURRENCIES)[number] = "EUR";
 
-// Limits shared by the forms (maxLength, max items) and the schemas below.
-export const HEADLINE_MAX = 120;
-export const ABOUT_MAX = 2000; // also a check constraint on candidate_profiles.about
-export const DESCRIPTION_MAX = 3000;
+export const ABOUT_MAX = 2000;
 export const MAX_ROLES = 5;
 export const MAX_SKILLS = 50;
-export const MAX_SKILL_YEARS = 50;
-export const MAX_EXPERIENCES = 30;
-export const MAX_EDUCATIONS = 15;
-export const MAX_CERTIFICATIONS = 30;
-export const MAX_LANGUAGES = 15;
-export const MAX_HIDDEN_DOMAINS = 20;
-export const MAX_RESUME_MB = 5;
-export const MAX_RESUME_BYTES = MAX_RESUME_MB * 1024 * 1024;
+export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 
 const keys = <T extends Record<string, string>>(o: T) =>
   Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
@@ -96,7 +85,7 @@ const domain = z
   .pipe(z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/, "Enter a domain like acme.com"));
 
 export const aboutSchema = z.object({
-  headline: requiredText(HEADLINE_MAX, "Add a headline"),
+  headline: requiredText(120, "Add a headline"),
   about: requiredText(ABOUT_MAX, "Write a few sentences about yourself"),
   locationCity: optionalText(100),
   locationCountry: z
@@ -137,7 +126,7 @@ export const experienceSchema = z
     isRemote: z.boolean(),
     startMonth: month,
     endMonth: z.union([z.literal("").transform(() => null), month]).nullable(),
-    description: optionalText(DESCRIPTION_MAX),
+    description: optionalText(3000),
   })
   .refine((e) => !e.endMonth || e.endMonth >= e.startMonth, {
     message: "End date must be after the start date",
@@ -145,7 +134,7 @@ export const experienceSchema = z
   });
 
 export const experiencesSchema = z.object({
-  experiences: z.array(experienceSchema).max(MAX_EXPERIENCES),
+  experiences: z.array(experienceSchema).max(30),
   noExperience: z.boolean(),
 });
 
@@ -155,7 +144,7 @@ export const skillsSchema = z.object({
       z.object({
         name: requiredText(60, "Skill can't be empty"),
         level: optionalEnum(skillLevel),
-        years: z.union([z.literal("").transform(() => null), z.coerce.number().int().min(0).max(MAX_SKILL_YEARS)]).nullable(),
+        years: z.union([z.literal("").transform(() => null), z.coerce.number().int().min(0).max(50)]).nullable(),
       }),
     )
     .max(MAX_SKILLS, `Add up to ${MAX_SKILLS} skills`),
@@ -177,7 +166,7 @@ export const educationsSchema = z.object({
           path: ["endYear"],
         }),
     )
-    .max(MAX_EDUCATIONS),
+    .max(15),
 });
 
 export const certificationsSchema = z.object({
@@ -189,7 +178,7 @@ export const certificationsSchema = z.object({
         year: optionalYear,
       }),
     )
-    .max(MAX_CERTIFICATIONS),
+    .max(30),
 });
 
 export const languagesSchema = z.object({
@@ -200,12 +189,12 @@ export const languagesSchema = z.object({
         proficiency: languageProficiency,
       }),
     )
-    .max(MAX_LANGUAGES)
+    .max(15)
     .refine((list) => new Set(list.map((l) => l.languageCode)).size === list.length, "Each language only once"),
 });
 
 export const privacySchema = z.object({
-  hiddenCompanyDomains: z.array(domain).max(MAX_HIDDEN_DOMAINS),
+  hiddenCompanyDomains: z.array(domain).max(20),
 });
 
 export type AboutInput = z.input<typeof aboutSchema>;

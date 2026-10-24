@@ -12,9 +12,6 @@ export type Tab = {
   content: ReactNode;
 };
 
-// Tailwind's `lg` breakpoint, below which the nav is a strip above the panel.
-const BELOW_LG = "(max-width: 1023px)";
-
 const ReportDirty = createContext<((id: string, dirty: boolean) => void) | null>(null);
 
 // Lets a section form flag unsaved edits in the nav.
@@ -42,7 +39,7 @@ export function SectionTabs({ groups, initial }: { groups: { label?: string; tab
     setActive(id);
     if (focus) tabRefs.current.get(id)?.focus();
     // On small screens the panel sits below the strip; bring it into view.
-    if (window.matchMedia(BELOW_LG).matches) {
+    if (window.matchMedia("(max-width: 1023px)").matches) {
       panelsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }

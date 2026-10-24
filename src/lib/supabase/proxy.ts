@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { supabaseEnv } from "@/lib/env";
 
 // Paths a signed-out visitor may open. Everything else requires a session.
 const PUBLIC_PATHS = ["/login", "/auth"];
@@ -13,11 +12,10 @@ function isPublic(pathname: string) {
 // Pages still verify the user themselves (see src/lib/auth.ts).
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const { url, anonKey } = supabaseEnv();
 
   const supabase = createServerClient(
-    url,
-    anonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {

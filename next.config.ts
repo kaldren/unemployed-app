@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
-  typedRoutes: true,
   experimental: {
     // Resume PDFs are up to 5 MB, plus multipart overhead.
     serverActions: { bodySizeLimit: "6mb" },

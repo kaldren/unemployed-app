@@ -2,33 +2,18 @@ import type { CandidateProfileData } from "./queries";
 
 export const MIN_SKILLS = 3;
 
-export type ProfileSection = "about" | "preferences" | "experience" | "skills";
-
-type Requirement = {
-  label: string;
-  section: ProfileSection;
-  met: (data: CandidateProfileData) => boolean;
-};
-
 // What a candidate needs before they can be matched. Order is the order shown on /profile.
-const REQUIREMENTS: Requirement[] = [
-  { label: "Headline", section: "about", met: ({ profile }) => Boolean(profile?.headline) },
-  { label: "About you", section: "about", met: ({ profile }) => Boolean(profile?.about) },
-  { label: "Location", section: "about", met: ({ profile }) => Boolean(profile?.locationCountry) },
-  { label: "Roles you're looking for", section: "preferences", met: ({ roles }) => roles.length > 0 },
-  { label: "Work mode", section: "preferences", met: ({ profile }) => Boolean(profile?.workModes.length) },
-  {
-    label: "Work experience",
-    section: "experience",
-    met: ({ profile, experiences }) => experiences.length > 0 || Boolean(profile?.noExperience),
-  },
-  { label: `At least ${MIN_SKILLS} skills`, section: "skills", met: ({ skills }) => skills.length >= MIN_SKILLS },
-];
-
-export const COMPLETENESS_STEPS = REQUIREMENTS.length;
-
-export type MissingItem = Pick<Requirement, "label" | "section">;
-
-export function getMissingItems(data: CandidateProfileData): MissingItem[] {
-  return REQUIREMENTS.filter((r) => !r.met(data)).map(({ label, section }) => ({ label, section }));
+export function getMissingItems(data: CandidateProfileData): string[] {
+  const p = data.profile;
+  const missing: string[] = [];
+  if (!p?.headline) missing.push("Headline");
+  if (!p?.about) missing.push("About you");
+  if (!p?.locationCountry) missing.push("Location");
+  if (data.roles.length === 0) missing.push("Roles you're looking for");
+  if (!p?.workModes.length) missing.push("Work mode");
+  if (data.experiences.length === 0 && !p?.noExperience) missing.push("Work experience");
+  if (data.skills.length < MIN_SKILLS) missing.push(`At least ${MIN_SKILLS} skills`);
+  return missing;
 }
+
+export const COMPLETENESS_STEPS = 7;

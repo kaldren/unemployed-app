@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { z } from "zod";
 import { db } from "@/db";
 import {
@@ -15,19 +16,16 @@ import {
   experiences,
   profiles,
 } from "@/db/schema";
-import { requireCandidate } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { ensureRoles, ensureSkills, type Tx } from "@/lib/candidate/catalog";
 import {
-  ABOUT_MAX,
   aboutSchema,
   certificationsSchema,
   educationsSchema,
   experienceSchema,
   experiencesSchema,
-  HEADLINE_MAX,
   languagesSchema,
   MAX_RESUME_BYTES,
-  MAX_RESUME_MB,
   MAX_ROLES,
   MAX_SKILLS,
   preferencesSchema,
@@ -40,10 +38,16 @@ import { normalizeSlug } from "@/lib/candidate/slug";
 import { extractResume, ResumeExtractionError } from "@/lib/resume/extract";
 import { createClient } from "@/lib/supabase/server";
 
+async function requireCandidate() {
+  const user = await getCurrentUser();
+  if (user.type !== "candidate") redirect("/");
+  return user;
+}
+
 // Every section form posts its state as JSON in a hidden "data" field.
 function sectionAction<S extends z.ZodType>(
   schema: S,
-  save: (tx: Tx, profileId: string, data: z.output<S>) => Promise<unknown>,
+  save: (tx: Tx, profileId: string, data: z.output<S>) => Promise<void>,
 ) {
   return async (_prev: ActionState, formData: FormData): Promise<ActionState> => {
     const user = await requireCandidate();
@@ -125,7 +129,7 @@ async function replaceLanguages(tx: Tx, profileId: string, list: z.output<typeof
   if (list.length) await tx.insert(candidateLanguages).values(list.map((l) => ({ ...l, profileId })));
 }
 
-export const saveAbout = sectionAction(aboutSchema, (tx, id, data) => updateProfile(tx, id, data));
+export const saveAbout = sectionAction(aboutSchema, (tx, id, data) => updateProfile(tx, id, data).then(() => {}));
 
 export const savePreferences = sectionAction(preferencesSchema, async (tx, id, { roles, ...prefs }) => {
   await updateProfile(tx, id, { ...prefs, salaryCurrency: prefs.salaryMin === null ? null : prefs.salaryCurrency });
@@ -152,12 +156,11 @@ export const saveLanguages = sectionAction(languagesSchema, (tx, id, data) =>
 );
 
 export const savePrivacy = sectionAction(privacySchema, (tx, id, data) =>
-  updateProfile(tx, id, { hiddenCompanyDomains: [...new Set(data.hiddenCompanyDomains)] }),
+  updateProfile(tx, id, { hiddenCompanyDomains: [...new Set(data.hiddenCompanyDomains)] }).then(() => {}),
 );
 
 // Resume import is hidden for now (see DECISIONS.md); the action stays callable by ID, so refuse it.
 const RESUME_IMPORT_ENABLED = false;
-const RESUME_BUCKET = "resumes";
 
 // Uploads the resume, has Claude extract a profile from it, and fills the profile.
 // Lists (experience, skills, education, certifications, languages) are replaced;
@@ -168,14 +171,14 @@ export async function importResume(_prev: ActionState, formData: FormData): Prom
   const file = formData.get("resume");
   if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Choose a PDF file." };
   if (file.type !== "application/pdf") return { status: "error", message: "Your resume must be a PDF." };
-  if (file.size > MAX_RESUME_BYTES) return { status: "error", message: `Your resume must be ${MAX_RESUME_MB} MB or smaller.` };
+  if (file.size > MAX_RESUME_BYTES) return { status: "error", message: "Your resume must be 5 MB or smaller." };
 
   const pdf = Buffer.from(await file.arrayBuffer());
   const path = `${user.id}/resume.pdf`;
   // The user's own session: Storage policies limit them to their own folder.
   const supabase = await createClient();
   const { error: uploadError } = await supabase.storage
-    .from(RESUME_BUCKET)
+    .from("resumes")
     .upload(path, pdf, { contentType: "application/pdf", upsert: true });
   if (uploadError) {
     console.error("Resume upload failed", uploadError);
@@ -210,8 +213,8 @@ export async function importResume(_prev: ActionState, formData: FormData): Prom
     const [current] = await tx.select().from(candidateProfiles).where(eq(candidateProfiles.profileId, user.id));
 
     await updateProfile(tx, user.id, {
-      headline: current.headline ?? field("headline", extracted.headline?.slice(0, HEADLINE_MAX)),
-      about: current.about ?? field("about", extracted.about?.slice(0, ABOUT_MAX)),
+      headline: current.headline ?? field("headline", extracted.headline?.slice(0, 120)),
+      about: current.about ?? field("about", extracted.about?.slice(0, 2000)),
       locationCity: current.locationCity ?? field("locationCity", extracted.locationCity),
       locationCountry: current.locationCountry ?? field("locationCountry", extracted.locationCountry),
       linkedinUrl: current.linkedinUrl ?? field("linkedinUrl", extracted.linkedinUrl),
@@ -222,8 +225,10 @@ export async function importResume(_prev: ActionState, formData: FormData): Prom
       resumeUploadedAt: new Date(),
     });
     await replaceExperiences(tx, user.id, valid(extracted.experiences, experienceSchema));
-    const skills = valid(extracted.skills.map((s) => ({ ...s, years: null })), skillsSchema.shape.skills.element);
-    await replaceSkills(tx, user.id, skills.slice(0, MAX_SKILLS));
+    await replaceSkills(tx, user.id, valid(
+        extracted.skills.map((s) => ({ ...s, years: null })),
+        skillsSchema.shape.skills.element,
+      ).slice(0, MAX_SKILLS));
     await replaceEducations(tx, user.id, valid(extracted.educations, educationsSchema.shape.educations.element));
     await replaceCertifications(
       tx,

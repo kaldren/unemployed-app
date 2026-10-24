@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
-import { PageLoading } from "@/components/page-loading";
-import { requireCandidate } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
-import { COMPLETENESS_STEPS, getMissingItems, type ProfileSection } from "@/lib/candidate/completeness";
+import { COMPLETENESS_STEPS, MIN_SKILLS, getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
-import { DEFAULT_CURRENCY } from "@/lib/candidate/schemas";
 import { SectionTabs, type Tab } from "./section-tabs";
 import {
   AboutSection,
@@ -25,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<p className="m-auto text-muted-foreground">Loading…</p>}>
       <ProfileEditor />
     </Suspense>
   );
@@ -35,20 +34,20 @@ const str = (v: string | number | null | undefined) => (v == null ? "" : String(
 const month = (date: string | null) => (date ? date.slice(0, 7) : "");
 
 async function ProfileEditor() {
-  const user = await requireCandidate();
+  const user = await getCurrentUser();
+  if (user.type !== "candidate") redirect("/");
 
   const [data, catalog] = await Promise.all([getCandidateProfile(user.id), getCatalogNames()]);
   const p = data.profile;
   const missing = getMissingItems(data);
   const done = COMPLETENESS_STEPS - missing.length;
-  const status = (section: ProfileSection) => (missing.some((m) => m.section === section) ? "todo" : "done");
-  const currentDomains = data.experiences.flatMap((e) => (!e.endDate && e.companyDomain ? [e.companyDomain] : []));
+  const currentDomains = data.experiences.filter((e) => !e.endDate && e.companyDomain).map((e) => e.companyDomain!);
 
   const sections: Tab[] = [
     {
       id: "about",
       label: "About you",
-      status: status("about"),
+      status: p?.headline && p.about && p.locationCountry ? "done" : "todo",
       content: (
         <AboutSection
           initial={{
@@ -66,7 +65,7 @@ async function ProfileEditor() {
     {
       id: "preferences",
       label: "What you're looking for",
-      status: status("preferences"),
+      status: data.roles.length > 0 && p?.workModes.length ? "done" : "todo",
       content: (
         <PreferencesSection
           roleSuggestions={catalog.roles}
@@ -76,7 +75,7 @@ async function ProfileEditor() {
             workModes: p?.workModes ?? [],
             employmentTypes: p?.employmentTypes ?? [],
             salaryMin: str(p?.salaryMin),
-            salaryCurrency: p?.salaryCurrency ?? DEFAULT_CURRENCY,
+            salaryCurrency: p?.salaryCurrency ?? "EUR",
             availableFrom: str(p?.availableFrom),
             jobSearchStatus: str(p?.jobSearchStatus),
             openToRelocation: p?.openToRelocation ?? false,
@@ -88,7 +87,7 @@ async function ProfileEditor() {
     {
       id: "experience",
       label: "Work experience",
-      status: status("experience"),
+      status: data.experiences.length > 0 || p?.noExperience ? "done" : "todo",
       content: (
         <ExperienceSection
           noExperience={p?.noExperience ?? false}
@@ -110,7 +109,7 @@ async function ProfileEditor() {
     {
       id: "skills",
       label: "Skills",
-      status: status("skills"),
+      status: data.skills.length >= MIN_SKILLS ? "done" : "todo",
       content: (
         <SkillsSection
           suggestions={catalog.skills}

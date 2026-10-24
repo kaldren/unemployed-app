@@ -3,7 +3,6 @@ import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import type { CurrentUser } from "@/lib/auth";
-import { SITE_NAME } from "@/lib/site";
 
 // The one bar on every signed-in page: brand (home) on the left, account on the right.
 export function AppHeader({ user, current }: { user: CurrentUser; current?: "profile" }) {
@@ -14,7 +13,7 @@ export function AppHeader({ user, current }: { user: CurrentUser; current?: "pro
           href="/"
           className="mr-auto rounded-md text-base font-semibold tracking-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          {SITE_NAME}
+          Unemployed
         </Link>
         {user.type === "candidate" && (
           <Button asChild variant="ghost" size="sm" className="aria-[current=page]:bg-muted">

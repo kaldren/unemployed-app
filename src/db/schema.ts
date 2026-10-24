@@ -145,7 +145,7 @@ export const candidateProfiles = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    check("about_length", sql`char_length(${t.about}) <= 2000`), // keep in sync with ABOUT_MAX
+    check("about_length", sql`char_length(${t.about}) <= 2000`),
     check("salary_min_positive", sql`${t.salaryMin} >= 0`),
     ownerCanRead("candidate profile"),
   ],
