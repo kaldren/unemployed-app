@@ -31,11 +31,14 @@ async function getOrCreateUserId(): Promise<string> {
   if (data.user) return data.user.id;
   if (error?.code !== "email_exists") throw error;
 
-  const { data: list, error: listError } = await supabase.auth.admin.listUsers();
-  if (listError) throw listError;
-  const user = list.users.find((u) => u.email === TEST_USER.email);
-  if (!user) throw new Error(`Test user ${TEST_USER.email} not found`);
-  return user.id;
+  // listUsers is paginated; walk the pages until the test user turns up.
+  for (let page = 1; ; page++) {
+    const { data: list, error: listError } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (listError) throw listError;
+    const user = list.users.find((u) => u.email === TEST_USER.email);
+    if (user) return user.id;
+    if (list.users.length < 1000) throw new Error(`Test user ${TEST_USER.email} not found`);
+  }
 }
 
 export async function setProfile(userId: string, exists: boolean) {
