@@ -8,6 +8,7 @@ import {
   getJobsToScore,
   getScoredHashes,
   pairKey,
+  retryMatchingSoon,
   saveMatchScore,
   stampMatchedAt,
 } from "./queries";
@@ -19,9 +20,25 @@ const CONCURRENT_CALLS = 4;
 
 type Target = { jobId: string } | { candidateId: string };
 
+// Only what the prompt needs: no name, contact details or links reach the AI.
 function toMatchCandidate({ profile, ...data }: CandidateProfileData): MatchCandidate | null {
   if (!profile) return null;
-  return { ...profile, ...data };
+  return {
+    headline: profile.headline,
+    about: profile.about,
+    locationCity: profile.locationCity,
+    locationCountry: profile.locationCountry,
+    openToRelocation: profile.openToRelocation,
+    seniority: profile.seniority,
+    workModes: profile.workModes,
+    employmentTypes: profile.employmentTypes,
+    roles: data.roles,
+    skills: data.skills,
+    experiences: data.experiences,
+    educations: data.educations,
+    certifications: data.certifications,
+    languages: data.languages,
+  };
 }
 
 // Runs `task` over `items`, `limit` at a time.
@@ -34,6 +51,7 @@ async function inPool<T>(items: T[], limit: number, task: (item: T) => Promise<v
 }
 
 // Scores the best pre-filtered pairs around a job or candidate, skipping pairs whose input hasn't changed.
+// Returns whether every pair it tried failed.
 async function matchAround(target: Target) {
   const pairs = await findPairsToScore(target, PAIRS_PER_RUN);
   const jobIds = [...new Set(pairs.map((p) => p.jobId))];
@@ -56,22 +74,28 @@ async function matchAround(target: Target) {
     return [{ jobId, candidateId, prompt, inputHash }];
   });
 
+  let failed = 0;
   await inPool(toScore, CONCURRENT_CALLS, async ({ prompt, ...pair }) => {
     try {
       const score = await scoreMatch(prompt);
       await saveMatchScore({ ...pair, ...score, model });
     } catch (error) {
       // The pair stays unscored (or keeps its old score) and is tried again on the next run.
+      failed++;
       console.error("Match scoring failed", pair, error);
     }
   });
+  return toScore.length > 0 && failed === toScore.length;
 }
 
 async function run(target: Target, onlyIfStale: boolean) {
   try {
-    if (await stampMatchedAt(target, onlyIfStale)) await matchAround(target);
+    if (!(await stampMatchedAt(target, onlyIfStale))) return;
+    // Nothing scored (e.g. the API is down): try again in an hour rather than a day.
+    if (await matchAround(target)) await retryMatchingSoon(target);
   } catch (error) {
     console.error("Matching run failed", target, error);
+    await retryMatchingSoon(target).catch(() => {});
   }
 }
 

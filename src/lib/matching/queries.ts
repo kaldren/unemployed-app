@@ -336,7 +336,7 @@ export async function listCompanyMatches(companyId: string) {
 
 // Pairs for the AI to score, around one job or one candidate: live jobs and visible, complete
 // candidates that pass the hard filters and that neither side has swiped yet (a swiped pair keeps
-// its score). Most shared skills first, as a cheap pre-filter before the AI.
+// its score). Among those, most shared skills first, as a cheap pre-filter before the AI.
 export async function findPairsToScore(target: { jobId: string } | { candidateId: string }, limit: number) {
   const sharedSkills = sql`(
     select count(*) from job_skills js join candidate_skills cs on cs.skill_id = js.skill_id
@@ -357,7 +357,14 @@ export async function findPairsToScore(target: { jobId: string } | { candidateId
         sql`not exists (select 1 from employer_swipes s where s.job_id = ${jobs.id} and s.candidate_id = ${candidateProfiles.profileId})`,
       ),
     )
-    .orderBy(desc(sharedSkills), desc(jobs.createdAt), desc(candidateProfiles.updatedAt))
+    // Unscored pairs first, then the longest since scored: otherwise the same top pairs (skipped by their
+    // unchanged hash) fill every run, and pairs past the limit are never scored or rescored.
+    .orderBy(
+      sql`(select m.scored_at from job_matches m where m.job_id = ${jobs.id} and m.candidate_id = ${candidateProfiles.profileId}) asc nulls first`,
+      desc(sharedSkills),
+      desc(jobs.createdAt),
+      desc(candidateProfiles.updatedAt),
+    )
     .limit(limit);
 }
 
@@ -406,6 +413,7 @@ export async function saveMatchScore(values: typeof jobMatches.$inferInsert) {
 }
 
 const STALE_AFTER = sql`now() - interval '24 hours'`;
+const RETRY_AFTER = sql`interval '1 hour'`;
 
 // Stamps a job's or candidate's last matching run. With `onlyIfStale`, only when the last run is a day
 // old or there's none, and returns whether it stamped: concurrent page views start one run, not many.
@@ -418,4 +426,11 @@ export async function stampMatchedAt(target: { jobId: string } | { candidateId: 
     sql`update ${table} set matched_at = now() where ${idColumn} = ${id} ${stale} returning 1`,
   );
   return rows.length > 0;
+}
+
+// Backdates the stamp so the next deck view an hour from now runs again, after a run that failed.
+export async function retryMatchingSoon(target: { jobId: string } | { candidateId: string }) {
+  const [table, idColumn, id] =
+    "jobId" in target ? [jobs, jobs.id, target.jobId] : [candidateProfiles, candidateProfiles.profileId, target.candidateId];
+  await db.execute(sql`update ${table} set matched_at = ${STALE_AFTER} + ${RETRY_AFTER} where ${idColumn} = ${id}`);
 }

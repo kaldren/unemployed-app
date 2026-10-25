@@ -15,7 +15,11 @@ const CANDIDATE_TABLES = [
 export async function resetCandidate(userId: string) {
   const supabase = admin();
   // Every table references profiles directly, so the deletes are independent.
-  const results = await Promise.all(CANDIDATE_TABLES.map((table) => supabase.from(table).delete().eq("profile_id", userId)));
+  const results = await Promise.all([
+    ...CANDIDATE_TABLES.map((table) => supabase.from(table).delete().eq("profile_id", userId)),
+    // Scores from real AI runs that saves in other specs started.
+    supabase.from("job_matches").delete().eq("candidate_id", userId),
+  ]);
   for (const { error } of results) if (error) throw error;
 }
 
