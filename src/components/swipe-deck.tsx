@@ -29,8 +29,8 @@ export function SwipeDeck({
   empty: ReactNode;
 }) {
   const router = useRouter();
-  const [deck, setDeck] = useState(cards);
-  const [index, setIndex] = useState(0);
+  // The deck and the position in it change together, so a late advance can't skip a card of a newer deck.
+  const [{ deck, index }, setPosition] = useState({ deck: cards, index: 0 });
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [exiting, setExiting] = useState<boolean | null>(null);
@@ -43,8 +43,7 @@ export function SwipeDeck({
 
   // A refresh brings a new deck from the server, without the cards already swiped.
   if (cards !== deck) {
-    setDeck(cards);
-    setIndex(0);
+    setPosition({ deck: cards, index: 0 });
     setExiting(null);
     setDx(0);
   }
@@ -59,8 +58,9 @@ export function SwipeDeck({
     });
   }
 
+  // Returns whether the swipe was taken.
   function decide(liked: boolean) {
-    if (!card || exiting !== null) return;
+    if (!card || exiting !== null) return false;
     setExiting(liked);
     setMatched(false);
     setError(null);
@@ -74,11 +74,12 @@ export function SwipeDeck({
       }
     });
     setTimeout(() => {
-      setIndex((i) => i + 1);
+      setPosition((p) => (p.deck === deck ? { ...p, index: p.index + 1 } : p));
       setDx(0);
       setExiting(null);
       if (index + 1 >= deck.length) refresh();
     }, EXIT_MS);
+    return true;
   }
 
   // Keep the latest decide() for the key listener.
@@ -90,10 +91,8 @@ export function SwipeDeck({
     function onKey(event: KeyboardEvent) {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       if (event.target instanceof HTMLElement && event.target.closest("input, textarea, select, [contenteditable]")) return;
-      if (event.key === "ArrowRight") decideRef.current(true);
-      else if (event.key === "ArrowLeft") decideRef.current(false);
-      else return;
-      event.preventDefault();
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      if (decideRef.current(event.key === "ArrowRight")) event.preventDefault();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -118,6 +117,13 @@ export function SwipeDeck({
     setDragging(false);
     if (liked === null) setDx(0);
     else decide(liked);
+  }
+
+  // The browser took the gesture over (e.g. to scroll): snap back rather than decide.
+  function onPointerCancel() {
+    drag.current = null;
+    setDragging(false);
+    setDx(0);
   }
 
   const offset = exiting === null ? dx : exiting ? width * 1.5 : -width * 1.5;
@@ -157,7 +163,7 @@ export function SwipeDeck({
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerEnd}
-              onPointerCancel={onPointerEnd}
+              onPointerCancel={onPointerCancel}
               className={cn(
                 "relative cursor-grab touch-pan-y select-none",
                 dragging ? "cursor-grabbing" : "transition-transform duration-200 motion-reduce:transition-none",

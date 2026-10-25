@@ -74,7 +74,7 @@ async function Jobs() {
                           <span className="text-base font-medium">{job.title || "Untitled job"}</span>
                           <Badge variant="secondary">{STATUS_LABELS[job.status]}</Badge>
                         </div>
-                        {roleTypeLabel(job) && <p className="text-sm text-muted-foreground">{roleTypeLabel(job)}</p>}
+                        <RoleType label={roleTypeLabel(job)} />
                       </div>
                     </Link>
                   </Card>
@@ -86,4 +86,8 @@ async function Jobs() {
       </main>
     </>
   );
+}
+
+function RoleType({ label }: { label: string }) {
+  return label ? <p className="text-sm text-muted-foreground">{label}</p> : null;
 }

@@ -61,11 +61,22 @@ async function skillNamesByJob(jobIds: string[]) {
   return groupNames(rows, (r) => r.jobId);
 }
 
-function groupNames<T extends { name: string }>(rows: T[], key: (row: T) => string) {
-  const map = new Map<string, string[]>();
-  for (const row of rows) map.set(key(row), [...(map.get(key(row)) ?? []), row.name]);
+function groupBy<T>(rows: T[], key: (row: T) => string) {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = map.get(key(row));
+    if (list) list.push(row);
+    else map.set(key(row), [row]);
+  }
   return map;
 }
+
+function groupNames<T extends { name: string }>(rows: T[], key: (row: T) => string) {
+  return new Map([...groupBy(rows, key)].map(([k, list]) => [k, list.map((r) => r.name)]));
+}
+
+// When both sides had liked: the later of the two swipes.
+const matchedAt = sql`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`;
 
 // ---------- Candidate side ----------
 
@@ -97,6 +108,15 @@ export async function getJobDeck(candidateId: string) {
 }
 
 export type JobCard = Awaited<ReturnType<typeof getJobDeck>>[number];
+
+// One-query check for swipes; the full profile isn't needed for it.
+export async function isCandidateComplete(candidateId: string) {
+  const [row] = await db
+    .select({ id: candidateProfiles.profileId })
+    .from(candidateProfiles)
+    .where(and(eq(candidateProfiles.profileId, candidateId), candidateIsComplete));
+  return Boolean(row);
+}
 
 export async function canCandidateSee(candidateId: string, jobId: string) {
   const [row] = await db
@@ -132,9 +152,6 @@ export async function listCandidateMatches(candidateId: string) {
       companyName: companies.name,
       contactName: recruiters.fullName,
       contactEmail: recruiters.email,
-      matchedAt: sql<Date>`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`.mapWith(
-        candidateSwipes.createdAt,
-      ),
     })
     .from(candidateSwipes)
     .innerJoin(
@@ -145,7 +162,7 @@ export async function listCandidateMatches(candidateId: string) {
     .innerJoin(companies, eq(companies.id, jobs.companyId))
     .leftJoin(recruiters, eq(recruiters.id, employerSwipes.decidedBy))
     .where(and(eq(candidateSwipes.profileId, candidateId), eq(candidateSwipes.liked, true), eq(employerSwipes.liked, true)))
-    .orderBy(desc(sql`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`));
+    .orderBy(desc(matchedAt));
 }
 
 // ---------- Employer side ----------
@@ -213,11 +230,12 @@ export async function getCandidateDeck(jobId: string, companyDomain: string) {
 
   const skillsBy = groupNames(skillRows, (r) => r.profileId);
   const rolesBy = groupNames(roleRows, (r) => r.profileId);
+  const experiencesBy = groupBy(experienceRows, (r) => r.profileId);
   return rows.map((candidate) => ({
     ...candidate,
     skills: skillsBy.get(candidate.id) ?? [],
     roles: rolesBy.get(candidate.id) ?? [],
-    experiences: experienceRows.filter((e) => e.profileId === candidate.id).slice(0, 3),
+    experiences: (experiencesBy.get(candidate.id) ?? []).slice(0, 3),
   }));
 }
 
@@ -250,6 +268,7 @@ export async function recordEmployerSwipe(jobId: string, candidateId: string, em
 }
 
 // Candidates who matched any of the company's jobs, newest match first.
+// A candidate who has since hidden the company's domain drops out, like everywhere else.
 export async function listCompanyMatches(companyId: string) {
   return db
     .select({
@@ -260,9 +279,6 @@ export async function listCompanyMatches(companyId: string) {
       email: profiles.email,
       headline: candidateProfiles.headline,
       linkedinUrl: candidateProfiles.linkedinUrl,
-      matchedAt: sql<Date>`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`.mapWith(
-        candidateSwipes.createdAt,
-      ),
     })
     .from(employerSwipes)
     .innerJoin(
@@ -270,8 +286,16 @@ export async function listCompanyMatches(companyId: string) {
       and(eq(candidateSwipes.jobId, employerSwipes.jobId), eq(candidateSwipes.profileId, employerSwipes.candidateId)),
     )
     .innerJoin(jobs, eq(jobs.id, employerSwipes.jobId))
+    .innerJoin(companies, eq(companies.id, jobs.companyId))
     .innerJoin(profiles, eq(profiles.id, employerSwipes.candidateId))
-    .leftJoin(candidateProfiles, eq(candidateProfiles.profileId, profiles.id))
-    .where(and(eq(jobs.companyId, companyId), eq(employerSwipes.liked, true), eq(candidateSwipes.liked, true)))
-    .orderBy(desc(sql`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`));
+    .innerJoin(candidateProfiles, eq(candidateProfiles.profileId, profiles.id))
+    .where(
+      and(
+        eq(jobs.companyId, companyId),
+        eq(employerSwipes.liked, true),
+        eq(candidateSwipes.liked, true),
+        sql`not (${companies.domain} = any(${candidateProfiles.hiddenCompanyDomains}))`,
+      ),
+    )
+    .orderBy(desc(matchedAt));
 }
