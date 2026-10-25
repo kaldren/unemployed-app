@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import {
   boolean,
   check,
@@ -138,6 +138,8 @@ export const candidateProfiles = pgTable(
     noExperience: boolean("no_experience").notNull().default(false),
     resumePath: text("resume_path"),
     resumeUploadedAt: timestamp("resume_uploaded_at", { withTimezone: true }),
+    // Last time the AI looked for jobs for this candidate.
+    matchedAt: timestamp("matched_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -322,6 +324,155 @@ export const companyMembers = pgTable(
   ],
 ).enableRLS();
 
+// ---------- Jobs ----------
+
+// Jobs start as drafts. Publishing (and going live once the company is approved) comes later.
+export const jobStatus = pgEnum("job_status", ["draft", "open", "closed"]);
+
+const isCompanyMember = (companyId: SQL) =>
+  sql`exists (select 1 from company_members m where m.company_id = ${companyId} and m.profile_id = (select auth.uid()))`;
+
+// Written only by the server (Drizzle). RLS lets company members read their company's jobs.
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").references(() => profiles.id, { onDelete: "set null" }),
+    title: text().notNull().default(""),
+    seniority: seniority(),
+    employmentType: employmentType("employment_type"),
+    workMode: workMode("work_mode"),
+    description: text().notNull().default(""),
+    // What the employer told the AI about the role.
+    brief: text(),
+    status: jobStatus().notNull().default("draft"),
+    // Last time the AI looked for candidates for this job.
+    matchedAt: timestamp("matched_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    index("jobs_company_id_idx").on(t.companyId),
+    index("jobs_created_by_idx").on(t.createdBy),
+    // Keep in sync with JOB_TITLE_MAX, JOB_DESCRIPTION_MAX and JOB_BRIEF_MAX.
+    check("job_title_length", sql`char_length(${t.title}) <= 120`),
+    check("job_description_length", sql`char_length(${t.description}) <= 8000`),
+    check("job_brief_length", sql`char_length(${t.brief}) <= 4000`),
+    pgPolicy("Members can read their company's jobs", {
+      for: "select",
+      to: authenticatedRole,
+      using: isCompanyMember(sql`${t.companyId}`),
+    }),
+  ],
+).enableRLS();
+
+export const jobSkills = pgTable(
+  "job_skills",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    skillId: uuid("skill_id")
+      .notNull()
+      .references(() => skills.id, { onDelete: "cascade" }),
+    position: smallint().notNull(), // display order
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.skillId] }),
+    index("job_skills_skill_id_idx").on(t.skillId),
+    pgPolicy("Members can read their company's job skills", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from jobs j where j.id = ${t.jobId} and ${isCompanyMember(sql`j.company_id`)})`,
+    }),
+  ],
+).enableRLS();
+
+// ---------- Swipes ----------
+
+// A candidate's like or pass on a job. A like from both sides is a match.
+// Written only by the server (Drizzle). RLS lets candidates read their own swipes.
+export const candidateSwipes = pgTable(
+  "candidate_swipes",
+  {
+    profileId: profileId(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    liked: boolean().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.profileId, t.jobId] }),
+    index("candidate_swipes_job_id_idx").on(t.jobId),
+    pgPolicy("Candidates can read their own swipes", { for: "select", to: authenticatedRole, using: ownsRow }),
+  ],
+).enableRLS();
+
+// An employer's like or pass on a candidate for one of their company's jobs.
+export const employerSwipes = pgTable(
+  "employer_swipes",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    candidateId: uuid("candidate_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    // The employer candidates contact after a match.
+    decidedBy: uuid("decided_by").references(() => profiles.id, { onDelete: "set null" }),
+    liked: boolean().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.candidateId] }),
+    index("employer_swipes_candidate_id_idx").on(t.candidateId),
+    index("employer_swipes_decided_by_idx").on(t.decidedBy),
+    pgPolicy("Members can read their company's swipes", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from jobs j where j.id = ${t.jobId} and ${isCompanyMember(sql`j.company_id`)})`,
+    }),
+  ],
+).enableRLS();
+
+// ---------- AI matches ----------
+
+// Claude's score for a job and a candidate. Only pairs at or above the threshold reach either deck.
+// Every score is kept (with its reasons and model) so any decision can be audited, and so an
+// unchanged pair isn't scored twice. Written and read only by the server (Drizzle); no client access.
+export const jobMatches = pgTable(
+  "job_matches",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    candidateId: uuid("candidate_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    score: smallint().notNull(), // 0–100
+    // Why it fits, told to each side.
+    candidateReason: text("candidate_reason").notNull(),
+    employerReason: text("employer_reason").notNull(),
+    model: text().notNull(),
+    // Hash of everything the model saw; the same input isn't scored again.
+    inputHash: text("input_hash").notNull(),
+    scoredAt: timestamp("scored_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.candidateId] }),
+    index("job_matches_candidate_id_idx").on(t.candidateId),
+    check("job_match_score_range", sql`${t.score} between 0 and 100`),
+  ],
+).enableRLS();
+
+export type Job = typeof jobs.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type CandidateProfile = typeof candidateProfiles.$inferSelect;
 export type Experience = typeof experiences.$inferSelect;

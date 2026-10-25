@@ -37,6 +37,7 @@ import {
   type ActionState,
 } from "@/lib/candidate/schemas";
 import { normalizeSlug } from "@/lib/candidate/slug";
+import { matchAfterChange } from "@/lib/matching/run";
 import { extractResume, ResumeExtractionError } from "@/lib/resume/extract";
 import { createClient } from "@/lib/supabase/server";
 
@@ -60,6 +61,8 @@ function sectionAction<S extends z.ZodType>(
       await ensureCandidateRow(tx, user.id);
       await save(tx, user.id, parsed.data);
     });
+    // Rescores the candidate's matches; a profile that isn't complete yet has none.
+    matchAfterChange({ candidateId: user.id });
     revalidatePath("/profile");
     return { status: "saved", at: Date.now() };
   };

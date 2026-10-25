@@ -3,6 +3,7 @@ export type Portal = "candidate" | "employer";
 
 export const LOGIN_PATH = { candidate: "/login", employer: "/employers/login" } as const;
 export const HOME_PATH = { candidate: "/", employer: "/employers" } as const;
+export const MATCHES_PATH = { candidate: "/matches", employer: "/employers/matches" } as const;
 
 export function parsePortal(value: string | null | undefined): Portal {
   return value === "employer" ? "employer" : "candidate";

@@ -4,8 +4,10 @@ import {
   createContext,
   useActionState,
   useContext,
+  useEffect,
   useId,
   useState,
+  type FormEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -21,13 +23,31 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/candidate/schemas";
 import { cleanName } from "@/lib/candidate/slug";
-import { useReportDirty } from "./section-tabs";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
-const FieldErrors = createContext<Record<string, string>>({});
+// Server messages by field name, read by `Field`. `SectionForm` provides it; custom forms can too.
+export const FieldErrors = createContext<Record<string, string>>({});
 
-// A profile section: a card with its own form that posts `data` as JSON to `action`.
+// React resets a form after its `action` runs. Our forms are fully controlled, and the reset only
+// breaks them: selects show their first option, and Radix checkboxes revert to unchecked. Pass this
+// as `onResetCapture` so the reset is cancelled before the checkboxes' own listeners hear it.
+export function keepValuesOnReset(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+// Lets a parent (e.g. section tabs) hear which forms have unsaved edits.
+export const ReportDirty = createContext<((id: string, dirty: boolean) => void) | null>(null);
+
+function useReportDirty(id: string, dirty: boolean) {
+  const report = useContext(ReportDirty);
+  useEffect(() => {
+    report?.(id, dirty);
+  }, [report, id, dirty]);
+}
+
+// A form section: a card with its own form that posts `data` as JSON to `action`.
 export function SectionForm({
   id,
   title,
@@ -60,7 +80,7 @@ export function SectionForm({
   return (
     <Card asChild>
       <section id={id} aria-labelledby={`${id}-title`}>
-        <form action={formAction} className="flex flex-col gap-6">
+        <form action={formAction} onResetCapture={keepValuesOnReset} noValidate className="flex flex-col gap-6">
           <CardHeader>
             <CardTitle asChild>
               <h2 id={`${id}-title`}>{title}</h2>

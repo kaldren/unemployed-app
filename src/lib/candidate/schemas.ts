@@ -60,7 +60,7 @@ export const MAX_HIDDEN_DOMAINS = 20;
 export const MAX_RESUME_MB = 5;
 export const MAX_RESUME_BYTES = MAX_RESUME_MB * 1024 * 1024;
 
-const keys = <T extends Record<string, string>>(o: T) =>
+export const keys = <T extends Record<string, string>>(o: T) =>
   Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
 
 const seniority = z.enum(keys(SENIORITY));
@@ -83,7 +83,7 @@ const optionalUrl = z
   .trim()
   .transform((v) => v || null)
   .pipe(z.url({ protocol: /^https?$/, error: "Enter a full link starting with https://" }).nullable());
-const blankAsNull = <T extends z.ZodType>(schema: T) =>
+export const blankAsNull = <T extends z.ZodType>(schema: T) =>
   z.union([z.literal("").transform(() => null), schema]).nullable();
 const month = z.string().regex(/^\d{4}-\d{2}$/, "Pick a month");
 const year = z.coerce.number().int().min(1950).max(2100);

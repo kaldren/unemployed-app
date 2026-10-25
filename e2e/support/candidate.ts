@@ -8,13 +8,18 @@ const CANDIDATE_TABLES = [
   "candidate_languages",
   "candidate_skills",
   "candidate_roles",
+  "candidate_swipes",
 ] as const;
 
 // Removes everything the test user added to their candidate profile.
 export async function resetCandidate(userId: string) {
   const supabase = admin();
   // Every table references profiles directly, so the deletes are independent.
-  const results = await Promise.all(CANDIDATE_TABLES.map((table) => supabase.from(table).delete().eq("profile_id", userId)));
+  const results = await Promise.all([
+    ...CANDIDATE_TABLES.map((table) => supabase.from(table).delete().eq("profile_id", userId)),
+    // Scores from real AI runs that saves in other specs started.
+    supabase.from("job_matches").delete().eq("candidate_id", userId),
+  ]);
   for (const { error } of results) if (error) throw error;
 }
 
@@ -35,6 +40,8 @@ export async function seedCompleteCandidate(userId: string) {
       location_country: "BG",
       work_modes: ["remote"],
       no_experience: true,
+      // A fresh stamp, so viewing the deck doesn't start a real AI matching run.
+      matched_at: new Date().toISOString(),
     }),
   );
   const { data: skills } = check(
