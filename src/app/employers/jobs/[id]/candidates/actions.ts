@@ -19,7 +19,7 @@ export async function swipeCandidate(jobId: string, candidateId: string, liked: 
 
   const [job, visible] = await Promise.all([
     getJob(user.company.id, parsed.data.jobId),
-    canCompanySee(user.company.domain, parsed.data.candidateId),
+    canCompanySee(parsed.data.jobId, user.company.domain, parsed.data.candidateId),
   ]);
   if (job?.status !== "open") return { status: "error", message: "Publish this job to review candidates." };
   if (!visible) return { status: "error", message: "This candidate isn't available anymore." };

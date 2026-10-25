@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { requireEmployer } from "@/lib/auth";
 import { getJob } from "@/lib/jobs/queries";
 import { getCandidateDeck } from "@/lib/matching/queries";
+import { refreshMatches } from "@/lib/matching/run";
 import { MATCHES_PATH } from "@/lib/portal";
 import { swipeCandidate } from "./actions";
 
@@ -33,6 +34,7 @@ async function Candidates({ params }: Pick<PageProps<"/employers/jobs/[id]/candi
   const approved = user.company.status === "approved";
   const open = job.status === "open";
   const deck = approved && open ? await getCandidateDeck(job.id, user.company.domain) : [];
+  if (approved && open) refreshMatches({ jobId: job.id });
 
   return (
     <>
@@ -42,8 +44,9 @@ async function Candidates({ params }: Pick<PageProps<"/employers/jobs/[id]/candi
           <div className="flex flex-col gap-1.5">
             <h1 className="text-4xl font-semibold tracking-tight text-balance">Candidates</h1>
             <p className="text-base text-muted-foreground">
-              For <span className="font-medium text-foreground">{job.title || "Untitled job"}</span>. Names and
-              contact details appear once you match.
+              Only candidates our AI matched to{" "}
+              <span className="font-medium text-foreground">{job.title || "Untitled job"}</span>. Names and contact
+              details appear once you match.
             </p>
           </div>
           {!approved ? (
@@ -69,7 +72,7 @@ async function Candidates({ params }: Pick<PageProps<"/employers/jobs/[id]/candi
               empty={
                 <div className="flex flex-col items-start gap-3">
                   <p className="text-sm text-muted-foreground">
-                    You&apos;ve seen every candidate for now. New ones show up here as they join.
+                    No more matches for now. When our AI finds a candidate who fits this job, they show up here.
                   </p>
                   <Button asChild variant="outline">
                     <Link href={MATCHES_PATH.employer}>See matches</Link>

@@ -20,6 +20,7 @@ export function JobCardBody({ job }: { job: JobCard }) {
         {roleType && <CardDescription>{roleType}</CardDescription>}
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
+        <MatchReason label="Why it fits you" reason={job.reason} />
         <p className="whitespace-pre-line">{job.description}</p>
         <Tags label="Skills" items={job.skills} />
       </CardContent>
@@ -48,6 +49,7 @@ export function CandidateCardBody({ candidate }: { candidate: CandidateCard }) {
         <CardDescription>{facts.join(" · ")}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
+        <MatchReason label="Why they fit" reason={candidate.reason} />
         <p className="whitespace-pre-line">{candidate.about}</p>
         <Tags label="Looking for" items={candidate.roles} />
         {candidate.experiences.length > 0 && (
@@ -68,6 +70,16 @@ export function CandidateCardBody({ candidate }: { candidate: CandidateCard }) {
         <Tags label="Skills" items={candidate.skills} />
       </CardContent>
     </>
+  );
+}
+
+// The AI's reason for the match, told to whoever is looking.
+function MatchReason({ label, reason }: { label: string; reason: string }) {
+  return (
+    <section className="flex flex-col gap-1.5 rounded-lg bg-muted p-4" aria-label={label}>
+      <h3 className="text-xs text-muted-foreground">{label}</h3>
+      <p>{reason}</p>
+    </section>
   );
 }
 

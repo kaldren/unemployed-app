@@ -36,6 +36,8 @@ export async function seedCompleteCandidate(userId: string) {
       location_country: "BG",
       work_modes: ["remote"],
       no_experience: true,
+      // A fresh stamp, so viewing the deck doesn't start a real AI matching run.
+      matched_at: new Date().toISOString(),
     }),
   );
   const { data: skills } = check(

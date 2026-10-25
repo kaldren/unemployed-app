@@ -138,6 +138,8 @@ export const candidateProfiles = pgTable(
     noExperience: boolean("no_experience").notNull().default(false),
     resumePath: text("resume_path"),
     resumeUploadedAt: timestamp("resume_uploaded_at", { withTimezone: true }),
+    // Last time the AI looked for jobs for this candidate.
+    matchedAt: timestamp("matched_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -347,6 +349,8 @@ export const jobs = pgTable(
     // What the employer told the AI about the role.
     brief: text(),
     status: jobStatus().notNull().default("draft"),
+    // Last time the AI looked for candidates for this job.
+    matchedAt: timestamp("matched_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -435,6 +439,36 @@ export const employerSwipes = pgTable(
       to: authenticatedRole,
       using: sql`exists (select 1 from jobs j where j.id = ${t.jobId} and ${isCompanyMember(sql`j.company_id`)})`,
     }),
+  ],
+).enableRLS();
+
+// ---------- AI matches ----------
+
+// Claude's score for a job and a candidate. Only pairs at or above the threshold reach either deck.
+// Every score is kept (with its reasons and model) so any decision can be audited, and so an
+// unchanged pair isn't scored twice. Written and read only by the server (Drizzle); no client access.
+export const jobMatches = pgTable(
+  "job_matches",
+  {
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    candidateId: uuid("candidate_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    score: smallint().notNull(), // 0–100
+    // Why it fits, told to each side.
+    candidateReason: text("candidate_reason").notNull(),
+    employerReason: text("employer_reason").notNull(),
+    model: text().notNull(),
+    // Hash of everything the model saw; the same input isn't scored again.
+    inputHash: text("input_hash").notNull(),
+    scoredAt: timestamp("scored_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.jobId, t.candidateId] }),
+    index("job_matches_candidate_id_idx").on(t.candidateId),
+    check("job_match_score_range", sql`${t.score} between 0 and 100`),
   ],
 ).enableRLS();
 

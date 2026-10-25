@@ -43,6 +43,8 @@ export async function createOpenJob(title: string) {
         employment_type: "full_time",
         work_mode: "remote",
         status: "open",
+        // A fresh stamp, so viewing the deck doesn't start a real AI matching run.
+        matched_at: new Date().toISOString(),
       })
       .select("id")
       .single(),
@@ -50,6 +52,26 @@ export async function createOpenJob(title: string) {
   const { data: skill } = check(await supabase.from("skills").select("id").eq("slug", "typescript").single());
   check(await supabase.from("job_skills").insert({ job_id: job!.id, skill_id: skill!.id, position: 0 }));
   return job!.id as string;
+}
+
+export const REASONS = {
+  candidate: "Your TypeScript backend work fits this role.",
+  employer: "TypeScript backend work fits this role.",
+};
+
+// What the AI would have scored the pair; at or above 70 it reaches both decks.
+export async function scorePair(jobId: string, candidateId: string, score: number) {
+  check(
+    await admin().from("job_matches").upsert({
+      job_id: jobId,
+      candidate_id: candidateId,
+      score,
+      candidate_reason: REASONS.candidate,
+      employer_reason: REASONS.employer,
+      model: "e2e",
+      input_hash: "e2e",
+    }),
+  );
 }
 
 // The card on top of the deck.

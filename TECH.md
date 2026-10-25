@@ -99,6 +99,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 DATABASE_URL=                 # Supabase pooled connection string, used by Drizzle
 ANTHROPIC_API_KEY=
 JOB_DRAFT_MODEL=              # optional, defaults to claude-haiku-5-5
+MATCH_MODEL=                  # optional, defaults to claude-sonnet-5-5
 VOYAGE_API_KEY=
 RESEND_API_KEY=
 INNGEST_EVENT_KEY=

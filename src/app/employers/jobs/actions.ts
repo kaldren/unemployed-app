@@ -12,6 +12,7 @@ import { toActionError, type ActionState } from "@/lib/candidate/schemas";
 import { normalizeSlug } from "@/lib/candidate/slug";
 import { isAiConfigured, writeJobDraft } from "@/lib/jobs/draft";
 import { keepChosenRoleType, type DraftRequest } from "@/lib/jobs/prompt";
+import { matchAfterChange } from "@/lib/matching/run";
 import { jobSchema, newJobSchema, refineSchema, type JobDraft, type RoleType } from "@/lib/jobs/schemas";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
@@ -109,6 +110,7 @@ export async function saveJob(jobId: string, _prev: ActionState, formData: FormD
     return true;
   });
   if (!saved) return { status: "error", message: JOB_GONE };
+  if (values.status === "open") matchAfterChange({ jobId });
 
   revalidatePath("/employers");
   revalidatePath(`/employers/jobs/${jobId}`);
