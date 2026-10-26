@@ -26,8 +26,8 @@ export const matchScoreSchema = z.object({
 
 export type MatchScore = z.infer<typeof matchScoreSchema>;
 
-export const MATCH_SYSTEM = `You screen candidates for jobs on a hiring platform. Only candidates you pass are shown
-to the employer, and only jobs you pass are shown to the candidate, so both sides see few, qualified matches.
+export const MATCH_SYSTEM = `You screen candidates for jobs on a hiring platform. A pair is shown to both sides when the
+candidate has most of the job's skills ("matchedSkills"); your score ranks the pairs shown, best first.
 Score how well the candidate fits the job from 0 to 100:
 - 85-100: meets every core requirement at the right level; a clear interview.
 - 70-84: meets most core requirements; gaps are small or quick to learn.
@@ -162,7 +162,7 @@ export function clampScore(result: MatchScore): MatchScore {
 // Keeps only real job skills from the AI's list (once each, in the job's order) and the share they cover.
 export function skillCoverage(jobSkills: string[], matched: string[]) {
   const wanted = new Set(matched.map((name) => name.trim().toLowerCase()));
-  const matchedSkills = [...new Set(jobSkills)].filter((name) => wanted.has(name.toLowerCase()));
-  const total = new Set(jobSkills).size;
-  return { matchedSkills, skillCoverage: total ? Math.round((100 * matchedSkills.length) / total) : 0 };
+  const unique = [...new Set(jobSkills)];
+  const matchedSkills = unique.filter((name) => wanted.has(name.toLowerCase()));
+  return { matchedSkills, skillCoverage: unique.length ? Math.round((100 * matchedSkills.length) / unique.length) : 0 };
 }
