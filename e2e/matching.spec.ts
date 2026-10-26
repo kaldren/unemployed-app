@@ -122,9 +122,10 @@ test("a candidate hidden from a company doesn't see its jobs and isn't shown to 
 test("only pairs the AI matched reach either deck", async ({ browser }) => {
   const { candidateId, candidatePage, employerPage } = await setUpBothSides(browser);
   const strongId = await createOpenJob("Strong Engineer");
-  await scorePair(strongId, candidateId, 75);
+  // The skill coverage decides, not the overall score: over 75% is a match, 75% is not.
+  await scorePair(strongId, candidateId, 80, 50);
   const weakId = await createOpenJob("Weak Engineer");
-  await scorePair(weakId, candidateId, 55);
+  await scorePair(weakId, candidateId, 75, 95);
   // Never scored, like a job the AI hasn't looked at yet.
   await createOpenJob("Unscored Engineer");
 

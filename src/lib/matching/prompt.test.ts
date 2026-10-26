@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildMatchPrompt, clampScore, matchInputHash, type MatchCandidate, type MatchJob } from "./prompt";
+import {
+  buildMatchPrompt,
+  clampScore,
+  matchInputHash,
+  skillCoverage,
+  type MatchCandidate,
+  type MatchJob,
+} from "./prompt";
 
 const job: MatchJob = {
   title: "Backend Engineer",
@@ -66,11 +73,35 @@ describe("matchInputHash", () => {
 
 describe("clampScore", () => {
   it("keeps the score in 0-100 and trims the reasons", () => {
-    expect(clampScore({ score: 140, candidateReason: " Yes ", employerReason: "x".repeat(500) })).toEqual({
+    expect(
+      clampScore({ score: 140, matchedSkills: ["Go"], candidateReason: " Yes ", employerReason: "x".repeat(500) }),
+    ).toEqual({
       score: 100,
+      matchedSkills: ["Go"],
       candidateReason: "Yes",
       employerReason: "x".repeat(400),
     });
-    expect(clampScore({ score: -3, candidateReason: "", employerReason: "" }).score).toBe(0);
+    expect(clampScore({ score: -3, matchedSkills: [], candidateReason: "", employerReason: "" }).score).toBe(0);
+  });
+});
+
+describe("skillCoverage", () => {
+  const jobSkills = ["C#", ".NET", "Azure", "SQL"];
+
+  it("keeps only the job's skills, once each, in the job's order", () => {
+    expect(skillCoverage(jobSkills, ["azure", " C# ", "Azure", "Kubernetes"])).toEqual({
+      matchedSkills: ["C#", "Azure"],
+      skillCoverage: 50,
+    });
+  });
+
+  it("is the rounded share of the job's skills", () => {
+    expect(skillCoverage(jobSkills, ["C#", ".NET", "Azure"]).skillCoverage).toBe(75);
+    expect(skillCoverage(["A", "B", "C"], ["A", "B"]).skillCoverage).toBe(67);
+    expect(skillCoverage(jobSkills, jobSkills).skillCoverage).toBe(100);
+  });
+
+  it("is 0 for a job without skills", () => {
+    expect(skillCoverage([], ["C#"])).toEqual({ matchedSkills: [], skillCoverage: 0 });
   });
 });

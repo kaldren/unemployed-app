@@ -457,6 +457,9 @@ export const jobMatches = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     score: smallint().notNull(), // 0–100
+    // The job's skills the AI found in the profile (equivalents count), and their share of the job's skills.
+    matchedSkills: text("matched_skills").array().notNull().default(sql`'{}'`),
+    skillCoverage: smallint("skill_coverage").notNull().default(0), // 0–100
     // Why it fits, told to each side.
     candidateReason: text("candidate_reason").notNull(),
     employerReason: text("employer_reason").notNull(),
@@ -469,6 +472,7 @@ export const jobMatches = pgTable(
     primaryKey({ columns: [t.jobId, t.candidateId] }),
     index("job_matches_candidate_id_idx").on(t.candidateId),
     check("job_match_score_range", sql`${t.score} between 0 and 100`),
+    check("job_match_skill_coverage_range", sql`${t.skillCoverage} between 0 and 100`),
   ],
 ).enableRLS();
 

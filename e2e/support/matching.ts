@@ -59,13 +59,14 @@ export const REASONS = {
   employer: "TypeScript backend work fits this role.",
 };
 
-// What the AI would have scored the pair; at or above 70 it reaches both decks.
-export async function scorePair(jobId: string, candidateId: string, score: number) {
+// What the AI would have scored the pair; above 75% skill coverage it reaches both decks.
+export async function scorePair(jobId: string, candidateId: string, skillCoverage: number, score = skillCoverage) {
   check(
     await admin().from("job_matches").upsert({
       job_id: jobId,
       candidate_id: candidateId,
       score,
+      skill_coverage: skillCoverage,
       candidate_reason: REASONS.candidate,
       employer_reason: REASONS.employer,
       model: "e2e",
