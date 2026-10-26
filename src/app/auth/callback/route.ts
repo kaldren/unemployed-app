@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/db";
 import { companies, companyMembers, profiles } from "@/db/schema";
 import { safeNextPath } from "@/lib/auth";
+import { vetCompanySoon } from "@/lib/employer/vetting";
 import { companyNameFromDomain, emailDomain, isWorkEmail } from "@/lib/employer/work-email";
 import { HOME_PATH, LOGIN_PATH, parsePortal, type AuthError, type Portal } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
@@ -75,7 +76,7 @@ async function createCandidateProfile(user: User): Promise<null> {
 }
 
 // First sign-in creates the employer profile and joins the company for the email's domain,
-// creating the company (as its owner) if this is the first person from that domain.
+// creating the company (as its owner) if this is the first person from that domain. A new company is vetted by AI.
 async function createEmployer(user: User): Promise<AuthError | null> {
   const email = requireEmail(user);
   const [existing] = await db.select({ type: profiles.type }).from(profiles).where(eq(profiles.id, user.id));
@@ -83,14 +84,14 @@ async function createEmployer(user: User): Promise<AuthError | null> {
   if (!isWorkEmail(email)) return "personal_email";
 
   const domain = emailDomain(email);
-  await db.transaction(async (tx) => {
+  const createdCompanyId = await db.transaction(async (tx) => {
     // The same link opened twice at once: the second request waits here, then finds the profile made.
     const [inserted] = await tx
       .insert(profiles)
       .values(profileValues(user, "employer"))
       .onConflictDoNothing({ target: profiles.id })
       .returning({ id: profiles.id });
-    if (!inserted) return;
+    if (!inserted) return null;
     const [created] = await tx
       .insert(companies)
       .values({ domain, name: companyNameFromDomain(domain) })
@@ -100,7 +101,9 @@ async function createEmployer(user: User): Promise<AuthError | null> {
       created?.id ??
       (await tx.select({ id: companies.id }).from(companies).where(eq(companies.domain, domain)))[0]!.id;
     await tx.insert(companyMembers).values({ profileId: user.id, companyId, role: created ? "owner" : "member" });
+    return created?.id ?? null;
   });
+  if (createdCompanyId) vetCompanySoon(createdCompanyId);
   return null;
 }
 

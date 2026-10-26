@@ -291,6 +291,10 @@ export const companies = pgTable(
     domain: text().notNull().unique(), // lowercase, e.g. "acme.com"
     name: text().notNull(),
     status: companyStatus().notNull().default("pending"),
+    // What the AI vetting said, kept so an admin can see why. Null until vetted.
+    vettingReason: text("vetting_reason"),
+    vettingModel: text("vetting_model"),
+    vettedAt: timestamp("vetted_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [
