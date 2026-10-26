@@ -49,7 +49,13 @@ async function Matches() {
               {matches.map((match) => (
                 <li key={match.jobId}>
                   <Card size="sm">
-                    <CardHeader className="grid-cols-[1fr_auto] items-center gap-x-4">
+                    <CardHeader className="grid-cols-[auto_1fr_auto] items-center gap-x-4">
+                      <span
+                        aria-hidden
+                        className="flex size-11 items-center justify-center rounded-full bg-linear-to-br from-spark-1 to-spark-2 text-base font-semibold text-primary-foreground"
+                      >
+                        {match.companyName.slice(0, 1).toUpperCase()}
+                      </span>
                       <div className="flex flex-col gap-1">
                         <CardTitle asChild>
                           <h2>{match.title}</h2>

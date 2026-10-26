@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Design system
 
-All UI MUST follow [DESIGN.md](DESIGN.md). Read it before writing or changing any markup or styles.
+All UI MUST follow [DESIGNSYSTEM.md](DESIGNSYSTEM.md). Read it before writing or changing any markup or styles.
 Use semantic tokens and `src/components/ui` (shadcn/ui); `pnpm lint` rejects raw palette colors, arbitrary colors and `dark:`.
 
 ## Workflow
@@ -24,7 +24,7 @@ The user is a solo dev. They give features; you ship them without check-ins. Use
 
 ### When to ask
 
-Decide yourself by default. Pick the option most consistent with TECH.md, DESIGN.md and existing code, then log it in [DECISIONS.md](DECISIONS.md) if it's non-obvious. Ask only when:
+Decide yourself by default. Pick the option most consistent with TECH.md, DESIGNSYSTEM.md and existing code, then log it in [DECISIONS.md](DECISIONS.md) if it's non-obvious. Ask only when:
 
 - it costs money or adds a vendor or paid tier not in TECH.md;
 - it is irreversible: deleting production data, destructive migrations on existing tables, force-pushing, rewriting history;

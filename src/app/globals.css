@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Design tokens. See DESIGN.md — app code uses these, never raw palette colors. Light only for the MVP. */
+/* Design tokens. See DESIGNSYSTEM.md — app code uses these, never raw palette colors. Light only for the MVP. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -29,6 +29,14 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-spark-1: var(--spark-1);
+  --color-spark-2: var(--spark-2);
+  --color-spark-3: var(--spark-3);
+  --color-streak: var(--streak);
+  --color-streak-soft: var(--streak-soft);
+  --color-streak-foreground: var(--streak-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -42,28 +50,38 @@
 }
 
 :root {
-  --background: #faf8f5; /* warm off-white page */
-  --foreground: #1c1917; /* warm ink */
+  --background: #fbf8ff; /* lavender-white page */
+  --foreground: #1a1530; /* deep indigo ink */
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #1a1530;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
-  --primary: #c8452f; /* coral, darkened so white text passes AA (4.8:1) */
+  --popover-foreground: #1a1530;
+  --primary: #6d28d9; /* electric violet: white text 7.1:1 */
   --primary-foreground: #ffffff;
-  --primary-hover: #b03b27;
-  --brand: #e2553d; /* bright coral for non-text accents: progress, highlights */
-  --secondary: #f3efea;
-  --secondary-foreground: #1c1917;
-  --muted: #f3efea;
-  --muted-foreground: #6f6862; /* ≥4.5:1 on background and card */
-  --accent: #fcebe6; /* coral tint: hover, selected */
-  --accent-foreground: #1c1917;
+  --primary-hover: #5b21b6;
+  --brand: #8b5cf6; /* bright violet for non-text accents: progress, highlights */
+  --secondary: #f3effc;
+  --secondary-foreground: #1a1530;
+  --muted: #f3effc;
+  --muted-foreground: #665d7a; /* ≥5.4:1 on background, card and muted */
+  --accent: #ede7fe; /* violet tint: hover, selected */
+  --accent-foreground: #1a1530;
   --destructive: #b42318;
-  --success: #15803d;
+  --success: #047857;
+  --success-soft: #d1fae5; /* "great fit" chips */
+  --success-soft-foreground: #065f46;
   --warning: #b45309;
-  --border: #e7e2db;
-  --input: #ddd6cd;
-  --ring: #e2553d;
+  /* The "spark" gradient: violet → pink carries white text (≥4.6:1); amber is decoration only. */
+  --spark-1: #7c3aed;
+  --spark-2: #db2777;
+  --spark-3: #f59e0b;
+  /* Daily streak: flame icon (3.6:1 on white), chip fill and its text (6.4:1). */
+  --streak: #ea580c;
+  --streak-soft: #ffedd5;
+  --streak-foreground: #9a3412;
+  --border: #e9e3f5;
+  --input: #dcd3ee;
+  --ring: #8b5cf6;
   --radius: 0.75rem;
 }
 
@@ -80,5 +98,48 @@
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+}
+
+/* Celebration motion. Every animation here is off under prefers-reduced-motion. */
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift, 0), 110vh, 0) rotate(var(--spin, 540deg));
+    opacity: 0.9;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility animate-confetti {
+  animation: confetti-fall var(--duration, 2.4s) cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 0s) forwards;
+}
+
+@utility animate-pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-confetti {
+    display: none;
+  }
+  .animate-pop {
+    animation: none;
   }
 }

@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { Brand, SparkText } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { LOGIN_PATH } from "@/lib/portal";
-import { SITE_NAME } from "@/lib/site";
 
 const STEPS = [
   {
@@ -36,7 +36,9 @@ export function Landing() {
     <>
       <header className="flex justify-center px-4">
         <div className="flex h-16 w-full max-w-5xl items-center gap-2">
-          <span className="mr-auto text-base font-semibold tracking-tight">{SITE_NAME}</span>
+          <span className="mr-auto">
+            <Brand />
+          </span>
           <Button asChild variant="ghost" size="sm">
             <Link href={LOGIN_PATH.employer}>For employers</Link>
           </Button>
@@ -49,14 +51,14 @@ export function Landing() {
         <div className="flex w-full max-w-3xl flex-col gap-20">
           <section className="flex flex-col items-center gap-6 text-center">
             <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Jobs where both sides say yes
+              Jobs where <SparkText>both sides say yes</SparkText>
             </h1>
             <p className="max-w-xl text-base text-pretty text-muted-foreground sm:text-lg">
               A hiring app that works like matchmaking. You only see jobs you fit, companies only see people who
               fit, and a conversation starts when you both say yes.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Button asChild size="lg">
+              <Button asChild size="lg" variant="spark">
                 <Link href={LOGIN_PATH.candidate}>Find a job</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
@@ -72,7 +74,10 @@ export function Landing() {
             <ol className="grid gap-8 sm:grid-cols-3">
               {STEPS.map((step, i) => (
                 <li key={step.title} className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-primary">Step {i + 1}</span>
+                  <span className="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-semibold text-primary">
+                    <span className="sr-only">Step </span>
+                    {i + 1}
+                  </span>
                   <h3 className="text-lg font-semibold">{step.title}</h3>
                   <p className="text-sm text-muted-foreground">{step.body}</p>
                 </li>

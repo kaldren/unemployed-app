@@ -23,8 +23,15 @@ test("a like from both sides is a match, and both can get in touch", async ({ br
   await expect(job).toContainText("Remote from anywhere · EUR 50,000–70,000 a year");
   await expect(job.getByRole("region", { name: "Skills" })).toContainText("TypeScript");
   await expect(job.getByRole("region", { name: "Why it fits you" })).toContainText(REASONS.candidate);
+  await expect(job).toContainText("90% skills match");
+  const today = candidatePage.getByRole("region", { name: "Today" });
+  await expect(today).toContainText("1 to go today");
   await candidatePage.getByRole("button", { name: "Like" }).click();
   await expect(candidatePage.getByRole("group", { name: `Swipe Engineer at ${EMPLOYER_COMPANY}` })).toHaveCount(0);
+  // Reviewing the last card finishes today's deck and starts (or keeps) a streak.
+  await expect(today).toContainText("All caught up for today");
+  await expect(today).toContainText(/\d+-day streak/);
+  await expect(today.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
   // Only the company liking back makes a match.
   await expect(candidatePage.getByText("It's a match")).toBeHidden();
 

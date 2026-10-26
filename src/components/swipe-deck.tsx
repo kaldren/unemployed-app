@@ -2,18 +2,22 @@
 
 import { Heart, X } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type PointerEvent, type ReactNode } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DailyProgress, MatchCelebration } from "@/components/engagement";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { dailyProgress, liveStreak, type Streak } from "@/lib/engagement/streak";
 import { dragRotation, SWIPE_ERROR, swipeDecision, type SwipeResult } from "@/lib/matching/swipe";
 
 const EXIT_MS = 200;
 
 type DeckCard = { id: string; label: string; content: ReactNode };
+
+// Today's activity from the server, for the progress bar and streak.
+export type DailyActivity = { streak: Streak; swipedToday: number };
 
 // One card at a time: drag it right (or press →, or "Like") to like, left to pass.
 // Swipes save in the background, in order; when the deck runs out it asks the server for more.
@@ -22,11 +26,13 @@ export function SwipeDeck({
   onSwipe,
   matchesHref,
   empty,
+  daily,
 }: {
   cards: DeckCard[];
   onSwipe: (id: string, liked: boolean) => Promise<SwipeResult>;
   matchesHref: Route;
   empty: ReactNode;
+  daily?: DailyActivity;
 }) {
   const router = useRouter();
   // The deck and the position in it change together, so a late advance can't skip a card of a newer deck.
@@ -40,10 +46,13 @@ export function SwipeDeck({
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const drag = useRef<{ startX: number } | null>(null);
   const [width, setWidth] = useState(400);
+  // Swipes on this deck; the server's `daily` already counts the ones before it.
+  const [{ activity, swiped }, setActivity] = useState({ activity: daily, swiped: 0 });
 
   // A refresh brings a new deck from the server, without the cards already swiped.
   if (cards !== deck) {
     setPosition({ deck: cards, index: 0 });
+    setActivity({ activity: daily, swiped: 0 });
     setExiting(null);
     setDx(0);
   }
@@ -62,6 +71,7 @@ export function SwipeDeck({
   function decide(liked: boolean) {
     if (!card || exiting !== null) return false;
     setExiting(liked);
+    setActivity((a) => ({ ...a, swiped: a.swiped + 1 }));
     setMatched(false);
     setError(null);
     queue.current = queue.current.then(async () => {
@@ -126,22 +136,25 @@ export function SwipeDeck({
     setDx(0);
   }
 
+  const remaining = Math.max(0, deck.length - index - (exiting === null ? 0 : 1));
+  const reviewed = (activity?.swipedToday ?? 0) + swiped;
+  const streak = activity ? liveStreak(activity.streak, swiped) : 0;
+
   const offset = exiting === null ? dx : exiting ? width * 1.5 : -width * 1.5;
   const hint = Math.min(1, Math.abs(offset) / 120);
 
   return (
     <div className="flex flex-col gap-6">
-      {matched && (
-        <Alert>
-          <AlertTitle>It&apos;s a match</AlertTitle>
-          <AlertDescription>
-            You both said yes.{" "}
-            <Link href={matchesHref} className="font-medium text-primary underline-offset-4 hover:underline">
-              See how to get in touch
-            </Link>
-          </AlertDescription>
-        </Alert>
+      {activity && !(refreshing && !card) && (
+        <DailyProgress
+          reviewed={reviewed}
+          remaining={remaining}
+          value={dailyProgress(reviewed, remaining)}
+          streak={streak}
+          streakJustGrew={!activity.streak.activeToday && swiped > 0}
+        />
       )}
+      {matched && <MatchCelebration href={matchesHref} onDismiss={() => setMatched(false)} />}
       {error && <Alert variant="destructive">{error}</Alert>}
 
       {card ? (
@@ -184,8 +197,8 @@ export function SwipeDeck({
               <X aria-hidden />
               Pass
             </Button>
-            <Button size="lg" onClick={() => decide(true)} disabled={exiting !== null}>
-              <Heart aria-hidden />
+            <Button variant="spark" size="lg" onClick={() => decide(true)} disabled={exiting !== null}>
+              <Heart aria-hidden className="fill-current" />
               Like
             </Button>
           </div>
