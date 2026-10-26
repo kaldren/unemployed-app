@@ -16,4 +16,4 @@ The user gives a feature. You deliver it merged and pushed. Ask only per "When t
 7. **Review.** Run `/code-review --fix` on the branch diff, then re-run `pnpm check`.
 8. **Merge.** `git checkout main && git merge --no-ff feature/<slug> && git push`, push the branch too.
 9. **CI.** `gh run watch` on the main run. If it fails, fix on a new branch and repeat 5–8.
-10. **Report.** 3–5 lines: what shipped, decisions made, anything the user must do (e.g. env vars).
+10. **Report.** Use the `report` skill: one short report of the result, before → after, decisions, status and anything the user must do (e.g. env vars).
