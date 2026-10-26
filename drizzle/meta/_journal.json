@@ -71,6 +71,41 @@
       "when": 1793042123705,
       "tag": "0009_skill_coverage",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793045758964,
+      "tag": "0010_company_vetting",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793046136819,
+      "tag": "0011_job_location_salary",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793047041201,
+      "tag": "0012_resume_delete_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793047216847,
+      "tag": "0013_email_digest",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793047753823,
+      "tag": "0014_first_scored_at",
+      "breakpoints": true
     }
   ]
 }

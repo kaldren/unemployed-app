@@ -140,6 +140,9 @@ export const candidateProfiles = pgTable(
     resumeUploadedAt: timestamp("resume_uploaded_at", { withTimezone: true }),
     // Last time the AI looked for jobs for this candidate.
     matchedAt: timestamp("matched_at", { withTimezone: true }),
+    // The daily email about new matches: whether they want it, and when it last went out.
+    emailDigest: boolean("email_digest").notNull().default(true),
+    digestSentAt: timestamp("digest_sent_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -291,6 +294,10 @@ export const companies = pgTable(
     domain: text().notNull().unique(), // lowercase, e.g. "acme.com"
     name: text().notNull(),
     status: companyStatus().notNull().default("pending"),
+    // What the AI vetting said, kept so an admin can see why. Null until vetted.
+    vettingReason: text("vetting_reason"),
+    vettingModel: text("vetting_model"),
+    vettedAt: timestamp("vetted_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [
@@ -345,6 +352,13 @@ export const jobs = pgTable(
     seniority: seniority(),
     employmentType: employmentType("employment_type"),
     workMode: workMode("work_mode"),
+    // Where the work is. A remote job without a country is open to anyone.
+    locationCity: text("location_city"),
+    locationCountry: text("location_country"), // ISO 3166-1 alpha-2
+    // Pay range, annual and gross. Required to publish.
+    salaryMin: integer("salary_min"),
+    salaryMax: integer("salary_max"),
+    salaryCurrency: text("salary_currency"), // ISO 4217
     description: text().notNull().default(""),
     // What the employer told the AI about the role.
     brief: text(),
@@ -364,6 +378,7 @@ export const jobs = pgTable(
     check("job_title_length", sql`char_length(${t.title}) <= 120`),
     check("job_description_length", sql`char_length(${t.description}) <= 8000`),
     check("job_brief_length", sql`char_length(${t.brief}) <= 4000`),
+    check("job_salary_range", sql`${t.salaryMin} >= 0 and ${t.salaryMax} >= ${t.salaryMin}`),
     pgPolicy("Members can read their company's jobs", {
       for: "select",
       to: authenticatedRole,
@@ -467,6 +482,8 @@ export const jobMatches = pgTable(
     // Hash of everything the model saw; the same input isn't scored again.
     inputHash: text("input_hash").notNull(),
     scoredAt: timestamp("scored_at", { withTimezone: true }).notNull().defaultNow(),
+    // When the pair was first scored; rescoring doesn't change it, so the digest counts only new pairs.
+    firstScoredAt: timestamp("first_scored_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.jobId, t.candidateId] }),

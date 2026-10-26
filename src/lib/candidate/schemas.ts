@@ -204,6 +204,8 @@ export const languagesSchema = z.object({
     .refine((list) => new Set(list.map((l) => l.languageCode)).size === list.length, "Each language only once"),
 });
 
+export const emailSchema = z.object({ emailDigest: z.boolean() });
+
 export const privacySchema = z.object({
   hiddenCompanyDomains: z.array(domain).max(MAX_HIDDEN_DOMAINS).transform((list) => [...new Set(list)]),
 });

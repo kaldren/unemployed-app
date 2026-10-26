@@ -42,3 +42,7 @@ Respond with disciplined brevity. Think like you are charged per word.
 - Use bullets over paragraphs. Code over prose when it explains better.
 - Report what changed and what's next in a few lines, not an essay.
 - Only expand when asked or when detail is essential to correctness.
+
+## Testing
+
+All user-facing flows must have Playwright tests. Unit tests are required for any non-trivial logic. Run `pnpm verify` to ensure tests pass before merging.

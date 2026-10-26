@@ -4,8 +4,10 @@ import { useActionState, useState } from "react";
 import { SectionForm, keepValuesOnReset, Select, TagInput, TextArea, TextInput } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ActionState } from "@/lib/candidate/schemas";
+import { COUNTRIES } from "@/lib/candidate/locales";
+import { CURRENCIES, type ActionState } from "@/lib/candidate/schemas";
 import {
+  JOB_CITY_MAX,
   JOB_DESCRIPTION_MAX,
   JOB_INSTRUCTION_MAX,
   JOB_SKILLS_MAX,
@@ -16,7 +18,17 @@ import { refineJob } from "../actions";
 import { RoleTypeFields, type RoleTypeState } from "../role-type-fields";
 
 type JobStatus = keyof typeof JOB_STATUS;
-type JobState = RoleTypeState & { title: string; description: string; skills: string[]; status: JobStatus };
+type JobState = RoleTypeState & {
+  title: string;
+  description: string;
+  skills: string[];
+  locationCountry: string;
+  locationCity: string;
+  salaryMin: string;
+  salaryMax: string;
+  salaryCurrency: string;
+  status: JobStatus;
+};
 
 export function JobEditor({
   action,
@@ -47,6 +59,55 @@ export function JobEditor({
           placeholder="Backend Engineer"
         />
         <RoleTypeFields value={job} onChange={update} />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Select
+            label="Country"
+            name="locationCountry"
+            value={job.locationCountry}
+            onChange={(locationCountry) => update({ locationCountry })}
+            options={COUNTRIES}
+            placeholder={job.workMode === "remote" ? "Anywhere" : "Select…"}
+            hint={job.workMode === "remote" ? "Pick one if people must live there." : undefined}
+          />
+          <TextInput
+            label="City"
+            name="locationCity"
+            value={job.locationCity}
+            onChange={(locationCity) => update({ locationCity })}
+            maxLength={JOB_CITY_MAX}
+          />
+        </div>
+        <div className="grid gap-5 sm:grid-cols-[2fr_2fr_1fr]">
+          <TextInput
+            label="Salary from (yearly, gross)"
+            name="salaryMin"
+            type="number"
+            min={0}
+            step={1000}
+            inputMode="numeric"
+            value={job.salaryMin}
+            onChange={(salaryMin) => update({ salaryMin })}
+            hint="Candidates see the range."
+          />
+          <TextInput
+            label="Salary to"
+            name="salaryMax"
+            type="number"
+            min={0}
+            step={1000}
+            inputMode="numeric"
+            value={job.salaryMax}
+            onChange={(salaryMax) => update({ salaryMax })}
+          />
+          <Select
+            label="Currency"
+            name="salaryCurrency"
+            value={job.salaryCurrency}
+            onChange={(salaryCurrency) => update({ salaryCurrency })}
+            options={CURRENCIES.map((c): [string, string] => [c, c])}
+            placeholder={null}
+          />
+        </div>
         <TextArea
           label="Description"
           name="description"
@@ -91,7 +152,7 @@ function RefineCard({
   onRefined,
 }: {
   job: JobState;
-  onRefined: (draft: Omit<JobState, "status">) => void;
+  onRefined: (draft: Pick<JobState, keyof RoleTypeState | "title" | "description" | "skills">) => void;
 }) {
   const [instruction, setInstruction] = useState("");
   const [state, formAction, pending] = useActionState(

@@ -1,9 +1,15 @@
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { E2E_ADMIN } from "./e2e/support/admin-user";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+// The dev server inherits this, so the e2e admin can open /admin.
+process.env.ADMIN_USER_IDS = [process.env.ADMIN_USER_IDS, E2E_ADMIN.id].filter(Boolean).join(",");
+process.env.CRON_SECRET ||= "e2e-cron-secret";
 
-const baseURL = "http://localhost:3000";
+// Its own port and build folder, so e2e never reuses the dev server you run on :3000 (it lacks the e2e env above).
+const port = 3100;
+const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -17,7 +23,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm dev",
+    command: `pnpm next dev --port ${port}`,
+    env: { NEXT_DIST_DIR: ".next-e2e" },
     url: `${baseURL}/login`,
     reuseExistingServer: true,
     timeout: 120_000,

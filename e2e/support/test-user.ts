@@ -21,9 +21,12 @@ export function admin() {
   });
 }
 
-export async function getOrCreateUserId({ email, fullName }: { email: string; fullName: string } = TEST_USER) {
+export type TestUser = { email: string; fullName: string; id?: string };
+
+export async function getOrCreateUserId({ email, fullName, id }: TestUser = TEST_USER) {
   const supabase = admin();
   const { data, error } = await supabase.auth.admin.createUser({
+    id,
     email,
     email_confirm: true,
     user_metadata: { full_name: fullName },
@@ -42,14 +45,14 @@ export async function getOrCreateUserId({ email, fullName }: { email: string; fu
   }
 }
 
-export async function setProfile(userId: string, exists: boolean) {
+export async function setProfile(userId: string, exists: boolean, user: TestUser = TEST_USER) {
   const supabase = admin();
   const { error } = exists
     ? await supabase.from("profiles").upsert({
         id: userId,
         type: "candidate",
-        email: TEST_USER.email,
-        full_name: TEST_USER.fullName,
+        email: user.email,
+        full_name: user.fullName,
       })
     : await supabase.from("profiles").delete().eq("id", userId);
   if (error) throw error;
@@ -62,10 +65,10 @@ export async function magicLinkTokenHash(email: string) {
   return data.properties.hashed_token;
 }
 
-// Signs the test user into the browser context. Returns the user id.
-export async function signIn(context: BrowserContext, { withProfile = true } = {}) {
-  const userId = await getOrCreateUserId();
-  await setProfile(userId, withProfile);
+// Signs the test user (or `user`) into the browser context as a candidate. Returns the user id.
+export async function signIn(context: BrowserContext, { withProfile = true, user = TEST_USER } = {}) {
+  const userId = await getOrCreateUserId(user);
+  await setProfile(userId, withProfile, user);
 
   // Let @supabase/ssr write the session, so the cookies match what the app expects.
   const cookies: { name: string; value: string }[] = [];
@@ -83,7 +86,7 @@ export async function signIn(context: BrowserContext, { withProfile = true } = {
   });
   const { error } = await supabase.auth.verifyOtp({
     type: "magiclink",
-    token_hash: await magicLinkTokenHash(TEST_USER.email),
+    token_hash: await magicLinkTokenHash(user.email),
   });
   if (error) throw error;
 

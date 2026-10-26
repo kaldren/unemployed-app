@@ -6,13 +6,14 @@ import { JobCardBody } from "@/components/match-cards";
 import { PageLoading } from "@/components/page-loading";
 import { SwipeDeck } from "@/components/swipe-deck";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getSessionUserId } from "@/lib/auth";
 import { getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
 import { getJobDeck } from "@/lib/matching/queries";
 import { refreshMatches } from "@/lib/matching/run";
 import { HOME_PATH, MATCHES_PATH } from "@/lib/portal";
 import { swipeJob } from "./actions";
+import { Landing } from "./landing";
 
 export default function Home() {
   return (
@@ -23,6 +24,8 @@ export default function Home() {
 }
 
 async function Jobs() {
+  // Visitors get the landing page; signed-in candidates their deck.
+  if (!(await getSessionUserId())) return <Landing />;
   const user = await getCurrentUser();
   if (user.type === "employer") redirect(HOME_PATH.employer);
   // Candidates can't be matched until their profile is complete.

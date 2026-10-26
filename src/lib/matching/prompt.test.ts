@@ -16,6 +16,8 @@ const job: MatchJob = {
   seniority: "senior",
   employmentType: "full_time",
   workMode: "remote",
+  locationCity: null,
+  locationCountry: null,
 };
 
 const candidate: MatchCandidate = {
@@ -54,6 +56,12 @@ describe("buildMatchPrompt", () => {
     expect(prompt).toContain("- Engineer at Globex, 2020-03 to now\n  Payments API.");
     expect(prompt).toContain("- BSc, Computer Science, Sofia University, 2019");
     expect(prompt).toContain("- English: Professional");
+  });
+
+  it("adds the job's location only when it has one", () => {
+    expect(prompt.split("THE CANDIDATE")[0]).not.toContain("Location:");
+    const located = buildMatchPrompt({ ...job, locationCity: "Berlin", locationCountry: "DE" }, candidate);
+    expect(located).toContain("Work mode: Remote\nLocation: Berlin, Germany");
   });
 
   it("leaves out empty sections", () => {

@@ -45,6 +45,8 @@ Both name the strongest fit and, below 85, the main gap. Plain words, no scores,
 
 export type MatchJob = RoleType & {
   title: string;
+  locationCity: string | null;
+  locationCountry: string | null;
   companyName: string;
   description: string;
   skills: string[];
@@ -87,6 +89,8 @@ function jobLines(job: MatchJob) {
     job.seniority && `Seniority: ${SENIORITY[job.seniority]}`,
     job.employmentType && `Employment type: ${EMPLOYMENT_TYPES[job.employmentType]}`,
     job.workMode && `Work mode: ${WORK_MODES[job.workMode]}`,
+    // Omitted when unset, so jobs saved before locations existed keep their input hash.
+    job.locationCountry && `Location: ${join([job.locationCity, COUNTRY_NAMES.get(job.locationCountry)])}`,
     `Skills, most important first: ${job.skills.join(", ")}`,
     "Description:",
     job.description,

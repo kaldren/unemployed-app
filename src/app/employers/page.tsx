@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { DeleteAccount } from "@/components/delete-account";
 import { PageLoading } from "@/components/page-loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { requireEmployer } from "@/lib/auth";
+import { requireEmployer, type CurrentEmployer } from "@/lib/auth";
+import { vetCompanySoon } from "@/lib/employer/vetting";
 import { roleTypeLabel } from "@/lib/jobs/labels";
 import { listJobs } from "@/lib/jobs/queries";
 import { JOB_STATUS } from "@/lib/jobs/schemas";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Employer",
@@ -28,6 +31,8 @@ export default function EmployerHome() {
 async function Jobs() {
   const user = await requireEmployer();
   const jobs = await listJobs(user.company.id);
+  // Catches companies whose vetting never ran (made before vetting existed, or the run was lost).
+  if (user.company.status === "pending") vetCompanySoon(user.company.id, user.company.domain);
 
   return (
     <>
@@ -42,6 +47,7 @@ async function Jobs() {
               <p className="text-base text-muted-foreground">
                 Hiring for <span className="font-medium text-foreground">{user.company.name}</span>
               </p>
+              <VerificationNote status={user.company.status} />
             </div>
             {jobs.length > 0 && (
               <Button asChild>
@@ -82,9 +88,34 @@ async function Jobs() {
               ))}
             </ul>
           )}
+
+          <section aria-label="Account" className="pt-10">
+            <DeleteAccount description="Deleting your account keeps your company and its jobs for your teammates. If you're its only member, they're deleted too." />
+          </section>
         </div>
       </main>
     </>
+  );
+}
+
+// Candidates see a company's jobs only once it's approved, so say why they can't yet.
+function VerificationNote({ status }: { status: CurrentEmployer["company"]["status"] }) {
+  if (status === "approved") return null;
+  if (status === "rejected") {
+    return (
+      <p className="text-sm text-destructive">
+        We couldn&apos;t verify your company, so candidates won&apos;t see your jobs. If this is a mistake, email{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`} className="underline underline-offset-4">
+          {CONTACT_EMAIL}
+        </a>
+        .
+      </p>
+    );
+  }
+  return (
+    <p className="text-sm text-muted-foreground">
+      We&apos;re verifying your company. Candidates see your jobs once it&apos;s verified, usually within a day.
+    </p>
   );
 }
 

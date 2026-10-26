@@ -40,6 +40,7 @@ import {
   saveLanguages,
   savePreferences,
   savePrivacy,
+  saveEmail,
   saveSkills,
 } from "./actions";
 import {
@@ -512,6 +513,21 @@ export function PrivacySection({ initial, suggestions }: { initial: string[]; su
         max={MAX_HIDDEN_DOMAINS}
         placeholder="acme.com"
       />
+    </SectionForm>
+  );
+}
+
+export function EmailSection({ initial }: { initial: boolean }) {
+  const [emailDigest, setEmailDigest] = useState(initial);
+  return (
+    <SectionForm
+      id="email"
+      title="Email"
+      description="We always email you when you match. This is the one you can turn off."
+      action={saveEmail}
+      data={{ emailDigest }}
+    >
+      <Checkbox label="Email me once a day when new jobs match me" checked={emailDigest} onChange={setEmailDigest} />
     </SectionForm>
   );
 }

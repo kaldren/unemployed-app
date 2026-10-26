@@ -50,8 +50,8 @@ test.describe("signed in", () => {
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL("/login");
 
-    await page.goto("/");
-    await expect(page).toHaveURL("/login?next=%2F");
+    await page.goto("/profile");
+    await expect(page).toHaveURL("/login?next=%2Fprofile");
   });
 
   test("header navigates between home and profile", async ({ page, context }) => {

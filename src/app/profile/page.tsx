@@ -9,6 +9,8 @@ import { getCandidateProfile } from "@/lib/candidate/queries";
 import { cn } from "@/lib/utils";
 import { DEFAULT_CURRENCY } from "@/lib/candidate/schemas";
 import { SectionTabs, type Tab } from "./section-tabs";
+import { DeleteAccount } from "@/components/delete-account";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AboutSection,
   CertificationsSection,
@@ -17,6 +19,7 @@ import {
   LanguagesSection,
   PreferencesSection,
   PrivacySection,
+  EmailSection,
   SkillsSection,
 } from "./sections";
 
@@ -163,6 +166,29 @@ async function ProfileEditor() {
       label: "Hide my profile from",
       status: "optional",
       content: <PrivacySection initial={p?.hiddenCompanyDomains ?? []} suggestions={currentDomains} />,
+    },
+    {
+      id: "account",
+      label: "Account",
+      status: "optional",
+      content: (
+        <div className="flex flex-col gap-6">
+          <EmailSection initial={p?.emailDigest ?? true} />
+          <Card asChild>
+            <section aria-labelledby="account-title">
+              <CardHeader>
+                <CardTitle asChild>
+                  <h2 id="account-title">Account</h2>
+                </CardTitle>
+                <CardDescription>Signed in as {user.email}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DeleteAccount description="Deleting your account removes your profile, likes and matches for good." />
+              </CardContent>
+            </section>
+          </Card>
+        </div>
+      ),
     },
   ];
 

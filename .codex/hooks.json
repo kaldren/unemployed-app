@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/kaloyan/Projects/unemployed-app/.codex/hooks/lint-file.sh'",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/kaloyan/Projects/unemployed-app/.codex/hooks/verify-on-stop.sh'",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}

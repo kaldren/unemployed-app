@@ -42,6 +42,9 @@ export async function createOpenJob(title: string) {
         seniority: "senior",
         employment_type: "full_time",
         work_mode: "remote",
+        salary_min: 50000,
+        salary_max: 70000,
+        salary_currency: "EUR",
         status: "open",
         // A fresh stamp, so viewing the deck doesn't start a real AI matching run.
         matched_at: new Date().toISOString(),

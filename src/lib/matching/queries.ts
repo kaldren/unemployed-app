@@ -18,6 +18,7 @@ import {
   skills,
 } from "@/db/schema";
 import { MIN_SKILLS } from "@/lib/candidate/completeness";
+import { SEED_DOMAIN } from "@/lib/seed/domain";
 import { SKILL_COVERAGE_THRESHOLD } from "./prompt";
 
 // Cards loaded per page of the deck; the deck refreshes for more when it runs out.
@@ -26,11 +27,17 @@ export const DECK_SIZE = 10;
 // Published, from a verified company.
 const jobIsLive = and(eq(jobs.status, "open"), eq(companies.status, "approved"))!;
 
+// Seeded dummy data (lib/seed) and real accounts never see each other.
+const isSeedDomain = (domain: SQL | AnyPgColumn | string) =>
+  sql`(${domain} = ${SEED_DOMAIN} or ${domain} like ${`%.${SEED_DOMAIN}`})`;
+const emailDomain = (email: SQL | AnyPgColumn) => sql`split_part(${email}, '@', 2)`;
+
 // Jobs candidates can see: live, from a company the candidate hasn't hidden from.
 function jobIsVisibleTo(candidateId: string): SQL {
   return and(
     jobIsLive,
     sql`not exists (select 1 from candidate_profiles cp where cp.profile_id = ${candidateId} and ${companies.domain} = any(cp.hidden_company_domains))`,
+    sql`${isSeedDomain(companies.domain)} = ${isSeedDomain(emailDomain(sql`(select p.email from profiles p where p.id = ${candidateId})`))}`,
   )!;
 }
 
@@ -51,6 +58,7 @@ function candidateIsVisibleTo(companyDomain: string | AnyPgColumn): SQL {
     eq(profiles.type, "candidate"),
     candidateIsComplete,
     sql`not (${companyDomain} = any(${candidateProfiles.hiddenCompanyDomains}))`,
+    sql`${isSeedDomain(companyDomain)} = ${isSeedDomain(emailDomain(profiles.email))}`,
   )!;
 }
 
@@ -81,11 +89,28 @@ function groupNames<T extends { name: string }>(rows: T[], key: (row: T) => stri
 }
 
 // Hard filters on a job and candidate pair, before and after the AI scores it: the job's work mode is
-// one the candidate wants, and so is its employment type (when the candidate picked any).
+// one the candidate wants, and so is its employment type (when the candidate picked any). The candidate
+// lives in the job's country, or will relocate for an on-site or hybrid one (a remote job without a country
+// is open to all). And the job's top salary reaches the candidate's minimum, when both are in one currency.
 const pairFits = sql`(
   ${jobs.workMode} = any(${candidateProfiles.workModes})
   and (cardinality(${candidateProfiles.employmentTypes}) = 0 or ${jobs.employmentType} = any(${candidateProfiles.employmentTypes}))
+  and (
+    ${jobs.locationCountry} is null
+    or ${jobs.locationCountry} = ${candidateProfiles.locationCountry}
+    or (${jobs.workMode} <> 'remote' and ${candidateProfiles.openToRelocation})
+  )
+  and (
+    ${candidateProfiles.salaryMin} is null
+    or ${jobs.salaryMax} is null
+    or ${jobs.salaryCurrency} is distinct from ${candidateProfiles.salaryCurrency}
+    or ${jobs.salaryMax} >= ${candidateProfiles.salaryMin}
+  )
 )`;
+
+// Jobs the candidate hasn't liked or passed yet.
+const notSwipedBy = (candidateId: string) =>
+  sql`not exists (select 1 from candidate_swipes s where s.job_id = ${jobs.id} and s.profile_id = ${candidateId})`;
 
 // The AI found enough of the job's skills in the profile for both sides to see the pair.
 const isAiMatch = and(
@@ -93,6 +118,9 @@ const isAiMatch = and(
   eq(jobMatches.candidateId, candidateProfiles.profileId),
   gt(jobMatches.skillCoverage, SKILL_COVERAGE_THRESHOLD),
 )!;
+
+// The employer who decided on a candidate.
+const recruiters = aliasedTable(profiles, "recruiters");
 
 // When both sides had liked: the later of the two swipes.
 const matchedAt = sql`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`;
@@ -109,6 +137,11 @@ export async function getJobDeck(candidateId: string) {
       seniority: jobs.seniority,
       employmentType: jobs.employmentType,
       workMode: jobs.workMode,
+      locationCity: jobs.locationCity,
+      locationCountry: jobs.locationCountry,
+      salaryMin: jobs.salaryMin,
+      salaryMax: jobs.salaryMax,
+      salaryCurrency: jobs.salaryCurrency,
       companyName: companies.name,
       reason: jobMatches.candidateReason,
     })
@@ -120,7 +153,7 @@ export async function getJobDeck(candidateId: string) {
       and(
         jobIsVisibleTo(candidateId),
         pairFits,
-        sql`not exists (select 1 from candidate_swipes s where s.job_id = ${jobs.id} and s.profile_id = ${candidateId})`,
+        notSwipedBy(candidateId),
       ),
     )
     .orderBy(desc(jobMatches.score), desc(jobs.createdAt), asc(jobs.id))
@@ -131,6 +164,73 @@ export async function getJobDeck(candidateId: string) {
 }
 
 export type JobCard = Awaited<ReturnType<typeof getJobDeck>>[number];
+
+// Candidates due a daily digest: they want it, it hasn't gone out in the last day, and they can be matched.
+export async function listDigestCandidates(limit: number) {
+  return db
+    .select({ id: candidateProfiles.profileId, email: profiles.email, since: candidateProfiles.digestSentAt })
+    .from(candidateProfiles)
+    .innerJoin(profiles, eq(profiles.id, candidateProfiles.profileId))
+    .where(
+      and(
+        eq(candidateProfiles.emailDigest, true),
+        sql`(${candidateProfiles.digestSentAt} is null or ${candidateProfiles.digestSentAt} < now() - interval '20 hours')`,
+        candidateIsComplete,
+      ),
+    )
+    .orderBy(sql`${candidateProfiles.digestSentAt} asc nulls first`)
+    .limit(limit);
+}
+
+// Jobs in the candidate's deck that the AI first scored since `since` (or ever, when null).
+export async function countNewJobs(candidateId: string, since: Date | null) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(jobs)
+    .innerJoin(companies, eq(companies.id, jobs.companyId))
+    .innerJoin(candidateProfiles, eq(candidateProfiles.profileId, candidateId))
+    .innerJoin(jobMatches, isAiMatch)
+    .where(
+      and(
+        jobIsVisibleTo(candidateId),
+        pairFits,
+        since ? gt(jobMatches.firstScoredAt, since) : undefined,
+        notSwipedBy(candidateId),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+export async function stampDigestSent(candidateId: string) {
+  await db.update(candidateProfiles).set({ digestSentAt: sql`now()` }).where(eq(candidateProfiles.profileId, candidateId));
+}
+
+// Who to tell about a new match, and what about.
+export type MatchContacts = {
+  jobTitle: string;
+  companyName: string;
+  candidateEmail: string;
+  candidateName: string | null;
+  employerEmail: string | null;
+};
+
+export async function getMatchContacts(jobId: string, candidateId: string): Promise<MatchContacts | null> {
+  const [row] = await db
+    .select({
+      jobTitle: jobs.title,
+      companyName: companies.name,
+      candidateEmail: profiles.email,
+      candidateName: profiles.fullName,
+      employerEmail: recruiters.email,
+    })
+    .from(employerSwipes)
+    .innerJoin(jobs, eq(jobs.id, employerSwipes.jobId))
+    .innerJoin(companies, eq(companies.id, jobs.companyId))
+    .innerJoin(profiles, eq(profiles.id, employerSwipes.candidateId))
+    .leftJoin(recruiters, eq(recruiters.id, employerSwipes.decidedBy))
+    .where(and(eq(employerSwipes.jobId, jobId), eq(employerSwipes.candidateId, candidateId)));
+  return row ?? null;
+}
 
 // One-query check for swipes; the full profile isn't needed for it.
 export async function isCandidateComplete(candidateId: string) {
@@ -152,21 +252,28 @@ export async function canCandidateSee(candidateId: string, jobId: string) {
   return Boolean(row);
 }
 
-// Saves the candidate's like or pass (a later swipe replaces it). True when it makes a match.
-export async function recordCandidateSwipe(candidateId: string, jobId: string, liked: boolean) {
-  await db
+// The outcome of a swipe: whether the pair is matched, and whether this swipe made the match (so it's
+// announced once, not again when the same like is sent twice).
+export type SwipeOutcome = { matched: boolean; isNewMatch: boolean };
+
+// Saves the candidate's like or pass (a later swipe replaces it).
+export async function recordCandidateSwipe(candidateId: string, jobId: string, liked: boolean): Promise<SwipeOutcome> {
+  const changed = await db
     .insert(candidateSwipes)
     .values({ profileId: candidateId, jobId, liked })
-    .onConflictDoUpdate({ target: [candidateSwipes.profileId, candidateSwipes.jobId], set: { liked } });
-  if (!liked) return false;
+    .onConflictDoUpdate({
+      target: [candidateSwipes.profileId, candidateSwipes.jobId],
+      set: { liked },
+      setWhere: sql`${candidateSwipes.liked} is distinct from ${liked}`,
+    })
+    .returning({ jobId: candidateSwipes.jobId });
+  if (!liked) return { matched: false, isNewMatch: false };
   const [match] = await db
     .select({ jobId: employerSwipes.jobId })
     .from(employerSwipes)
     .where(and(eq(employerSwipes.jobId, jobId), eq(employerSwipes.candidateId, candidateId), eq(employerSwipes.liked, true)));
-  return Boolean(match);
+  return { matched: Boolean(match), isNewMatch: Boolean(match) && changed.length > 0 };
 }
-
-const recruiters = aliasedTable(profiles, "recruiters");
 
 // Jobs where the candidate and the employer liked each other, newest match first.
 export async function listCandidateMatches(candidateId: string) {
@@ -282,21 +389,28 @@ export async function canCompanySee(jobId: string, companyDomain: string, candid
   return Boolean(row);
 }
 
-// Saves the employer's like or pass for a job (a later swipe replaces it). True when it makes a match.
-export async function recordEmployerSwipe(jobId: string, candidateId: string, employerId: string, liked: boolean) {
-  await db
+// Saves the employer's like or pass for a job (a later swipe replaces it).
+export async function recordEmployerSwipe(
+  jobId: string,
+  candidateId: string,
+  employerId: string,
+  liked: boolean,
+): Promise<SwipeOutcome> {
+  const changed = await db
     .insert(employerSwipes)
     .values({ jobId, candidateId, decidedBy: employerId, liked })
     .onConflictDoUpdate({
       target: [employerSwipes.jobId, employerSwipes.candidateId],
       set: { liked, decidedBy: employerId },
-    });
-  if (!liked) return false;
+      setWhere: sql`${employerSwipes.liked} is distinct from ${liked}`,
+    })
+    .returning({ jobId: employerSwipes.jobId });
+  if (!liked) return { matched: false, isNewMatch: false };
   const [match] = await db
     .select({ jobId: candidateSwipes.jobId })
     .from(candidateSwipes)
     .where(and(eq(candidateSwipes.jobId, jobId), eq(candidateSwipes.profileId, candidateId), eq(candidateSwipes.liked, true)));
-  return Boolean(match);
+  return { matched: Boolean(match), isNewMatch: Boolean(match) && changed.length > 0 };
 }
 
 // Candidates who matched any of the company's jobs, newest match first.
@@ -379,6 +493,8 @@ export async function getJobsToScore(jobIds: string[]) {
         seniority: jobs.seniority,
         employmentType: jobs.employmentType,
         workMode: jobs.workMode,
+        locationCity: jobs.locationCity,
+        locationCountry: jobs.locationCountry,
         companyName: companies.name,
       })
       .from(jobs)

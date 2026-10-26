@@ -32,6 +32,7 @@ import {
   MAX_SKILLS,
   preferencesSchema,
   privacySchema,
+  emailSchema,
   skillsSchema,
   toActionError,
   type ActionState,
@@ -155,6 +156,8 @@ export const saveLanguages = sectionAction(languagesSchema, (tx, id, data) =>
 );
 
 export const savePrivacy = sectionAction(privacySchema, (tx, id, data) => updateProfile(tx, id, data));
+
+export const saveEmail = sectionAction(emailSchema, (tx, id, data) => updateProfile(tx, id, data));
 
 // Resume import is hidden for now (see DECISIONS.md); the action stays callable by ID, so refuse it.
 const RESUME_IMPORT_ENABLED = false;

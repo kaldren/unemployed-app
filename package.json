@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/seed.mts --soft && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,7 +14,8 @@
     "test": "vitest run",
     "verify": "pnpm lint && pnpm typecheck && pnpm test",
     "check": "pnpm verify && pnpm test:e2e",
-    "demo:employer": "node scripts/demo-employer.mts"
+    "demo:employer": "node scripts/demo-employer.mts",
+    "seed": "node scripts/seed.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",

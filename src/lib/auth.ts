@@ -1,6 +1,6 @@
 import "server-only";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { db } from "@/db";
@@ -9,6 +9,14 @@ import { HOME_PATH } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = Pick<Profile, "id" | "type" | "fullName" | "email" | "avatarUrl">;
+
+// The signed-in user's id, or null for a visitor. For public pages that look different when signed in.
+export async function getSessionUserId(): Promise<string | null> {
+  await connection();
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims.sub ?? null;
+}
 
 // Verifies the session and returns the signed-in user's profile.
 // Redirects to /login when signed out. Call it from every protected page or action.
@@ -69,6 +77,21 @@ export const requireEmployer = cache(async (): Promise<CurrentEmployer> => {
 
   return { ...user, ...membership };
 });
+
+// Admins are listed by user id in ADMIN_USER_IDS (comma-separated).
+export function isAdmin(userId: string) {
+  return (process.env.ADMIN_USER_IDS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .includes(userId);
+}
+
+// getCurrentUser for admin-only pages and actions. Anyone else gets a 404, so the page stays unlisted.
+export async function requireAdmin(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!isAdmin(user.id)) notFound();
+  return user;
+}
 
 // Only allow same-origin relative paths, so `next` can't become an open redirect.
 export function safeNextPath(next: string | null | undefined, fallback = "/"): string {

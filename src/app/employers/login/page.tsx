@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { GoogleButton } from "@/components/google-button";
+import { ConsentNote, SiteFooter } from "@/components/site-footer";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { safeNextPath } from "@/lib/auth";
@@ -15,21 +16,25 @@ export const metadata: Metadata = {
 
 export default function EmployerLoginPage({ searchParams }: PageProps<"/employers/login">) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 pb-16">
-      <div className="flex w-full max-w-sm flex-col gap-10 text-center">
-        <div className="flex flex-col gap-3">
-          <h1 className="text-4xl font-semibold tracking-tight">{SITE_NAME} for employers</h1>
-          <p className="text-base text-muted-foreground">Sign in with your work email to hire.</p>
+    <>
+      <main className="flex flex-1 items-center justify-center px-4 pb-16">
+        <div className="flex w-full max-w-sm flex-col gap-10 text-center">
+          <div className="flex flex-col gap-3">
+            <h1 className="text-4xl font-semibold tracking-tight">{SITE_NAME} for employers</h1>
+            <p className="text-base text-muted-foreground">Sign in with your work email to hire.</p>
+          </div>
+          {/* searchParams are request data, so they stream in behind a boundary. */}
+          <Suspense fallback={<SignInOptions disabled />}>
+            <SignInOptionsFromParams searchParams={searchParams} />
+          </Suspense>
+          <ConsentNote />
+          <Button asChild variant="link" size="sm">
+            <Link href={LOGIN_PATH.candidate}>Looking for a job? Sign in here</Link>
+          </Button>
         </div>
-        {/* searchParams are request data, so they stream in behind a boundary. */}
-        <Suspense fallback={<SignInOptions disabled />}>
-          <SignInOptionsFromParams searchParams={searchParams} />
-        </Suspense>
-        <Button asChild variant="link" size="sm">
-          <Link href={LOGIN_PATH.candidate}>Looking for a job? Sign in here</Link>
-        </Button>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 
