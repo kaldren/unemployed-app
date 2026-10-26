@@ -84,7 +84,7 @@ export function MatchCelebration({ href, onDismiss }: { href: Route; onDismiss: 
     <>
       <Confetti />
       <section
-        role="status"
+        role="alert"
         className="animate-pop flex flex-col items-center gap-4 rounded-2xl bg-linear-to-br from-spark-1 to-spark-2 p-6 text-center text-primary-foreground shadow-sm"
       >
         <PartyPopper aria-hidden className="size-10" />

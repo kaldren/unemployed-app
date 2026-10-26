@@ -15,5 +15,5 @@ export function Brand() {
 
 // Words in a headline that carry the brand gradient.
 export function SparkText({ children }: { children: React.ReactNode }) {
-  return <span className="bg-linear-to-r from-spark-1 to-spark-2 bg-clip-text text-transparent">{children}</span>;
+  return <span className="bg-linear-to-r from-spark-1 to-spark-2 bg-clip-text text-transparent forced-colors:bg-none forced-colors:text-[CanvasText]">{children}</span>;
 }

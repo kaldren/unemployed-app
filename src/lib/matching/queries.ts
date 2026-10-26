@@ -18,7 +18,7 @@ import {
   skills,
 } from "@/db/schema";
 import { MIN_SKILLS } from "@/lib/candidate/completeness";
-import { utcDay } from "@/lib/engagement/streak";
+import { computeStreak, utcDay } from "@/lib/engagement/streak";
 import { SEED_DOMAIN } from "@/lib/seed/domain";
 import { SKILL_COVERAGE_THRESHOLD } from "./prompt";
 
@@ -167,16 +167,19 @@ export async function getJobDeck(candidateId: string) {
 
 export type JobCard = Awaited<ReturnType<typeof getJobDeck>>[number];
 
-// The UTC days in the last 60 a candidate swiped on, and how many swipes today: their streak.
-export async function getSwipeActivity(candidateId: string) {
+// A candidate's daily streak and swipes today. Every swipe day, not a window, so long streaks aren't capped.
+export async function getSwipeActivity(candidateId: string, now = new Date()) {
   const day = sql<string>`to_char(${candidateSwipes.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`;
   const rows = await db
     .select({ day, count: sql<number>`count(*)::int` })
     .from(candidateSwipes)
-    .where(and(eq(candidateSwipes.profileId, candidateId), gt(candidateSwipes.createdAt, sql`now() - interval '60 days'`)))
+    .where(eq(candidateSwipes.profileId, candidateId))
     .groupBy(day);
-  const today = utcDay(new Date());
-  return { activeDays: rows.map((r) => r.day), swipedToday: rows.find((r) => r.day === today)?.count ?? 0 };
+  const today = utcDay(now);
+  return {
+    streak: computeStreak(rows.map((r) => r.day), now),
+    swipedToday: rows.find((r) => r.day === today)?.count ?? 0,
+  };
 }
 
 // Candidates due a daily digest: they want it, it hasn't gone out in the last day, and they can be matched.

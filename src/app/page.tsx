@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUser, getSessionUserId } from "@/lib/auth";
 import { getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
-import { computeStreak } from "@/lib/engagement/streak";
 import { getJobDeck, getSwipeActivity } from "@/lib/matching/queries";
 import { refreshMatches } from "@/lib/matching/run";
 import { HOME_PATH, MATCHES_PATH } from "@/lib/portal";
@@ -38,7 +37,7 @@ async function Jobs() {
   ]);
   if (getMissingItems(profile).length > 0) redirect("/profile");
   refreshMatches({ candidateId: user.id });
-  const firstName = user.fullName?.split(" ")[0];
+  const firstName = user.fullName?.trim().split(/\s+/)[0];
 
   return (
     <>
@@ -46,7 +45,7 @@ async function Jobs() {
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">
-            {firstName && <p className="text-sm font-medium text-primary">{greeting()}, {firstName}</p>}
+            {firstName && <p className="text-sm font-medium text-primary">Hi {firstName}, welcome back</p>}
             <h1 className="text-4xl font-semibold tracking-tight text-balance">Jobs for you</h1>
             <p className="text-base text-muted-foreground">
               Only jobs our AI matched to your profile. A company sees you once it matches you too.
@@ -60,7 +59,7 @@ async function Jobs() {
             }))}
             onSwipe={swipeJob}
             matchesHref={MATCHES_PATH.candidate}
-            daily={{ streak: computeStreak(activity.activeDays, new Date()), swipedToday: activity.swipedToday }}
+            daily={activity}
             empty={
               <div className="flex flex-col items-center gap-4 rounded-2xl bg-card px-6 py-10 text-center shadow-sm ring-1 ring-border">
                 <span className="flex size-14 items-center justify-center rounded-full bg-accent text-primary">
@@ -84,8 +83,3 @@ async function Jobs() {
   );
 }
 
-// Server time is UTC; close enough for a friendly hello in our first market.
-function greeting() {
-  const hour = new Date().getUTCHours();
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-}

@@ -102,7 +102,7 @@ Geist (`font-sans`, set on `html`). Use `font-mono` only for code or IDs.
 
 | Role | Classes |
 |---|---|
-| Greeting / eyebrow | `text-sm font-medium text-primary` ("Good morning, Ana") |
+| Greeting / eyebrow | `text-sm font-medium text-primary` ("Hi Ana, welcome back") |
 | Page title (`h1`) | `text-4xl font-semibold tracking-tight` |
 | Section / card title (`h2`) | `CardTitle` (`text-lg font-semibold`); deck cards `text-2xl tracking-tight` |
 | Body | `text-sm` (forms, cards), `text-base` (short intros) |
@@ -180,7 +180,7 @@ tokens (pill buttons, `h-10` controls, `bg-card` inputs). Don't hand-roll a look
 caught-up state.
 
 ```tsx
-<p className="text-sm font-medium text-primary">Good morning, {firstName}</p>
+<p className="text-sm font-medium text-primary">Hi {firstName}, welcome back</p>
 <h1 className="text-4xl font-semibold tracking-tight">Jobs for you</h1>
 <SwipeDeck cards={…} onSwipe={…} daily={{ streak, swipedToday }} empty={<CaughtUp />} />
 ```
