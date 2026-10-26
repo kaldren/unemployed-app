@@ -20,6 +20,7 @@ test("a like from both sides is a match, and both can get in touch", async ({ br
   const job = topCard(candidatePage);
   await expect(job).toHaveAccessibleName(`Swipe Engineer at ${EMPLOYER_COMPANY}`);
   await expect(job).toContainText("Senior · Full-time · Remote");
+  await expect(job).toContainText("Remote from anywhere · EUR 50,000–70,000 a year");
   await expect(job.getByRole("region", { name: "Skills" })).toContainText("TypeScript");
   await expect(job.getByRole("region", { name: "Why it fits you" })).toContainText(REASONS.candidate);
   await candidatePage.getByRole("button", { name: "Like" }).click();
@@ -117,6 +118,30 @@ test("a candidate hidden from a company doesn't see its jobs and isn't shown to 
   await employerPage.goto(`/employers/jobs/${jobId}/candidates`);
   await expect(employerPage.getByRole("heading", { name: "Candidates" })).toBeVisible();
   await expect(employerPage.getByRole("group", { name: CANDIDATE_HEADLINE })).toHaveCount(0);
+});
+
+test("jobs in another country or below the candidate's minimum pay reach neither deck", async ({ browser }) => {
+  const { candidateId, candidatePage, employerPage } = await setUpBothSides(browser);
+  // The seeded candidate lives in Bulgaria and works remotely.
+  await admin().from("candidate_profiles").update({ salary_min: 60000, salary_currency: "EUR" }).eq("profile_id", candidateId);
+  const fitsId = await createOpenJob("Local Engineer");
+  await admin().from("jobs").update({ location_country: "BG" }).eq("id", fitsId);
+  const abroadId = await createOpenJob("Abroad Engineer");
+  await admin().from("jobs").update({ location_country: "DE" }).eq("id", abroadId);
+  const cheapId = await createOpenJob("Cheap Engineer");
+  await admin().from("jobs").update({ salary_min: 30000, salary_max: 40000 }).eq("id", cheapId);
+  for (const id of [fitsId, abroadId, cheapId]) await scorePair(id, candidateId, 90);
+
+  await candidatePage.goto("/");
+  await expect(topCard(candidatePage)).toHaveAccessibleName(`Local Engineer at ${EMPLOYER_COMPANY}`);
+  await expect(topCard(candidatePage)).toContainText("Remote from Bulgaria");
+  await candidatePage.getByRole("button", { name: "Pass" }).click();
+  await expect(candidatePage.getByText("No more matches for now.")).toBeVisible();
+
+  for (const id of [abroadId, cheapId]) {
+    await employerPage.goto(`/employers/jobs/${id}/candidates`);
+    await expect(employerPage.getByText("No more matches for now.")).toBeVisible();
+  }
 });
 
 test("only pairs the AI matched reach either deck", async ({ browser }) => {

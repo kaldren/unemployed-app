@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { COUNTRIES } from "@/lib/candidate/locales";
 import { AVAILABILITY, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
-import { roleTypeLabel } from "@/lib/jobs/labels";
+import { locationLabel, roleTypeLabel, salaryLabel } from "@/lib/jobs/labels";
 import type { CandidateCard, JobCard } from "@/lib/matching/queries";
 
 const COUNTRY_NAMES = new Map(COUNTRIES);
@@ -10,6 +10,7 @@ const COUNTRY_NAMES = new Map(COUNTRIES);
 // What a candidate sees on a job in their deck.
 export function JobCardBody({ job }: { job: JobCard }) {
   const roleType = roleTypeLabel(job);
+  const facts = [locationLabel(job), salaryLabel(job)].filter(Boolean).join(" · ");
   return (
     <>
       <CardHeader>
@@ -18,6 +19,7 @@ export function JobCardBody({ job }: { job: JobCard }) {
           <h2 className="text-2xl tracking-tight">{job.title}</h2>
         </CardTitle>
         {roleType && <CardDescription>{roleType}</CardDescription>}
+        {facts && <CardDescription>{facts}</CardDescription>}
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <MatchReason label="Why it fits you" reason={job.reason} />

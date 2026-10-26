@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { blankAsNull, EMPLOYMENT_TYPES, keys, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
+import { blankAsNull, CURRENCIES, EMPLOYMENT_TYPES, keys, SENIORITY, WORK_MODES } from "@/lib/candidate/schemas";
 
 // Limits shared by the forms, the schemas and the AI draft. Titles, descriptions and briefs
 // are also check constraints on `jobs`.
@@ -9,6 +9,8 @@ export const JOB_BRIEF_MAX = 4000;
 export const JOB_INSTRUCTION_MAX = 1000;
 export const JOB_SKILLS_MAX = 20;
 export const JOB_SKILL_MAX = 60;
+export const JOB_CITY_MAX = 100;
+export const JOB_SALARY_MAX = 10_000_000;
 
 // What employers can set. "closed" exists in the database but nothing sets it yet.
 export const JOB_STATUS = { draft: "Draft", open: "Published" } as const;
@@ -30,6 +32,8 @@ export const newJobSchema = roleTypeSchema.extend({
   brief: z.string().trim().max(JOB_BRIEF_MAX, `Keep it under ${JOB_BRIEF_MAX} characters`),
 });
 
+const salary = blankAsNull(z.coerce.number().int("Use whole numbers").min(0).max(JOB_SALARY_MAX));
+
 // Every saved post has a role type; the new-job form may leave blanks for the AI to fill.
 const requiredEnum = <T extends Record<string, string>>(options: T, message: string) =>
   z.enum(keys(options), { error: message });
@@ -41,13 +45,25 @@ export const jobSchema = z.object({
   title: z.string().trim().min(1, "Add a job title").max(JOB_TITLE_MAX),
   description: z.string().trim().max(JOB_DESCRIPTION_MAX, `Keep it under ${JOB_DESCRIPTION_MAX} characters`),
   skills: skillsList,
+  locationCountry: blankAsNull(z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Pick a country")),
+  locationCity: z.string().trim().max(JOB_CITY_MAX).transform((v) => v || null),
+  salaryMin: salary,
+  salaryMax: salary,
+  salaryCurrency: z.enum(CURRENCIES, { error: "Pick a currency" }),
   status: z.enum(keys(JOB_STATUS)),
 })
   // A draft can be half-written; a published post needs everything candidates will read.
   .superRefine((job, ctx) => {
+    const issue = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
+    if (job.salaryMin !== null && job.salaryMax !== null && job.salaryMax < job.salaryMin) {
+      issue("salaryMax", "Make the maximum at least the minimum");
+    }
     if (job.status !== "open") return;
-    if (!job.description) ctx.addIssue({ code: "custom", path: ["description"], message: "Add a description before publishing" });
-    if (job.skills.length === 0) ctx.addIssue({ code: "custom", path: ["skills"], message: "Add at least one skill before publishing" });
+    if (!job.description) issue("description", "Add a description before publishing");
+    if (job.skills.length === 0) issue("skills", "Add at least one skill before publishing");
+    if (job.workMode !== "remote" && !job.locationCountry) issue("locationCountry", "Add a country before publishing");
+    if (job.salaryMin === null) issue("salaryMin", "Add a salary range before publishing");
+    if (job.salaryMax === null) issue("salaryMax", "Add a salary range before publishing");
   });
 
 export const refineSchema = z.object({

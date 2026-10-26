@@ -78,6 +78,13 @@
       "when": 1793045758964,
       "tag": "0010_company_vetting",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793046136819,
+      "tag": "0011_job_location_salary",
+      "breakpoints": true
     }
   ]
 }

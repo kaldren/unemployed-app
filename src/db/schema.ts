@@ -349,6 +349,13 @@ export const jobs = pgTable(
     seniority: seniority(),
     employmentType: employmentType("employment_type"),
     workMode: workMode("work_mode"),
+    // Where the work is. A remote job without a country is open to anyone.
+    locationCity: text("location_city"),
+    locationCountry: text("location_country"), // ISO 3166-1 alpha-2
+    // Pay range, annual and gross. Required to publish.
+    salaryMin: integer("salary_min"),
+    salaryMax: integer("salary_max"),
+    salaryCurrency: text("salary_currency"), // ISO 4217
     description: text().notNull().default(""),
     // What the employer told the AI about the role.
     brief: text(),
@@ -368,6 +375,7 @@ export const jobs = pgTable(
     check("job_title_length", sql`char_length(${t.title}) <= 120`),
     check("job_description_length", sql`char_length(${t.description}) <= 8000`),
     check("job_brief_length", sql`char_length(${t.brief}) <= 4000`),
+    check("job_salary_range", sql`${t.salaryMin} >= 0 and ${t.salaryMax} >= ${t.salaryMin}`),
     pgPolicy("Members can read their company's jobs", {
       for: "select",
       to: authenticatedRole,

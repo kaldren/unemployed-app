@@ -7,6 +7,7 @@ import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { requireEmployer } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
+import { DEFAULT_CURRENCY } from "@/lib/candidate/schemas";
 import { isAiConfigured } from "@/lib/jobs/draft";
 import { getJob } from "@/lib/jobs/queries";
 import { saveJob } from "../actions";
@@ -54,6 +55,11 @@ async function Job({ params }: Pick<PageProps<"/employers/jobs/[id]">, "params">
               workMode: job.workMode ?? "",
               description: job.description,
               skills: job.skills,
+              locationCountry: job.locationCountry ?? "",
+              locationCity: job.locationCity ?? "",
+              salaryMin: job.salaryMin?.toString() ?? "",
+              salaryMax: job.salaryMax?.toString() ?? "",
+              salaryCurrency: job.salaryCurrency ?? DEFAULT_CURRENCY,
               status: job.status === "open" ? "open" : "draft",
             }}
           />

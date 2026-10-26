@@ -52,9 +52,18 @@ test("an employer writes a job post by hand, saves it and sees it in the list", 
 
   await field(page, "Status").selectOption("open");
   await save.click();
+  await expect(page.getByText("Add a salary range before publishing").first()).toBeVisible();
+  await field(page, "Country").selectOption("BG");
+  await field(page, "Salary from (yearly, gross)").fill("50000");
+  await field(page, "Salary to").fill("70000");
+  await save.click();
   await expect(page.getByText("Saved")).toBeVisible();
 
   await page.reload();
+  await expect(field(page, "Country")).toHaveValue("BG");
+  await expect(field(page, "Salary from (yearly, gross)")).toHaveValue("50000");
+  await expect(field(page, "Salary to")).toHaveValue("70000");
+  await expect(field(page, "Currency")).toHaveValue("EUR");
   await expect(field(page, "Status")).toHaveValue("open");
   await expect(page.getByRole("heading", { name: "Backend Engineer" })).toBeVisible();
   await expect(field(page, "Description")).toHaveValue("Build and run our payments APIs.");
@@ -87,7 +96,7 @@ test("a job title and role type are required", async ({ page }) => {
   }
 });
 
-test("publishing needs a description and skills; drafts don't", async ({ page }) => {
+test("publishing needs a description, skills, a country and pay; drafts don't", async ({ page }) => {
   await signInFresh(page);
   await page.goto("/employers/jobs/new");
   await field(page, "Seniority").selectOption("junior");
@@ -101,6 +110,8 @@ test("publishing needs a description and skills; drafts don't", async ({ page })
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Add a description before publishing").first()).toBeVisible();
   await expect(page.getByText("Add at least one skill before publishing").first()).toBeVisible();
+  await expect(page.getByText("Add a country before publishing").first()).toBeVisible();
+  await expect(page.getByText("Add a salary range before publishing").first()).toBeVisible();
 
   await field(page, "Status").selectOption("draft");
   await page.getByRole("button", { name: "Save" }).click();

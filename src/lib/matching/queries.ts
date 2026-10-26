@@ -81,10 +81,23 @@ function groupNames<T extends { name: string }>(rows: T[], key: (row: T) => stri
 }
 
 // Hard filters on a job and candidate pair, before and after the AI scores it: the job's work mode is
-// one the candidate wants, and so is its employment type (when the candidate picked any).
+// one the candidate wants, and so is its employment type (when the candidate picked any). The candidate
+// lives in the job's country, or will relocate for an on-site or hybrid one (a remote job without a country
+// is open to all). And the job's top salary reaches the candidate's minimum, when both are in one currency.
 const pairFits = sql`(
   ${jobs.workMode} = any(${candidateProfiles.workModes})
   and (cardinality(${candidateProfiles.employmentTypes}) = 0 or ${jobs.employmentType} = any(${candidateProfiles.employmentTypes}))
+  and (
+    ${jobs.locationCountry} is null
+    or ${jobs.locationCountry} = ${candidateProfiles.locationCountry}
+    or (${jobs.workMode} <> 'remote' and ${candidateProfiles.openToRelocation})
+  )
+  and (
+    ${candidateProfiles.salaryMin} is null
+    or ${jobs.salaryMax} is null
+    or ${jobs.salaryCurrency} is distinct from ${candidateProfiles.salaryCurrency}
+    or ${jobs.salaryMax} >= ${candidateProfiles.salaryMin}
+  )
 )`;
 
 // The AI found enough of the job's skills in the profile for both sides to see the pair.
@@ -109,6 +122,11 @@ export async function getJobDeck(candidateId: string) {
       seniority: jobs.seniority,
       employmentType: jobs.employmentType,
       workMode: jobs.workMode,
+      locationCity: jobs.locationCity,
+      locationCountry: jobs.locationCountry,
+      salaryMin: jobs.salaryMin,
+      salaryMax: jobs.salaryMax,
+      salaryCurrency: jobs.salaryCurrency,
       companyName: companies.name,
       reason: jobMatches.candidateReason,
     })
@@ -379,6 +397,8 @@ export async function getJobsToScore(jobIds: string[]) {
         seniority: jobs.seniority,
         employmentType: jobs.employmentType,
         workMode: jobs.workMode,
+        locationCity: jobs.locationCity,
+        locationCountry: jobs.locationCountry,
         companyName: companies.name,
       })
       .from(jobs)
