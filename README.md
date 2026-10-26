@@ -48,3 +48,7 @@ of the MVP.
 Requires Node 24+, pnpm and Docker (for the Supabase CLI): `pnpm install`, `supabase start`, copy
 `.env.example` to `.env.local` and `.env`, then `pnpm dev`. Use `pnpm inngest:dev` to run
 background jobs.
+
+`pnpm dev` re-seeds dummy candidates, companies and jobs (all under `*.seed.test`) and prints a
+one-time sign-in link for each account, also saved to `.seed-accounts.md`. Links expire after an
+hour; `pnpm seed` makes fresh ones without restarting.

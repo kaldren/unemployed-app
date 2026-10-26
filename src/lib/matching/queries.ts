@@ -18,6 +18,7 @@ import {
   skills,
 } from "@/db/schema";
 import { MIN_SKILLS } from "@/lib/candidate/completeness";
+import { SEED_DOMAIN } from "@/lib/seed/domain";
 import { SKILL_COVERAGE_THRESHOLD } from "./prompt";
 
 // Cards loaded per page of the deck; the deck refreshes for more when it runs out.
@@ -26,11 +27,17 @@ export const DECK_SIZE = 10;
 // Published, from a verified company.
 const jobIsLive = and(eq(jobs.status, "open"), eq(companies.status, "approved"))!;
 
+// Seeded dummy data (lib/seed) and real accounts never see each other.
+const isSeedDomain = (domain: SQL | AnyPgColumn | string) =>
+  sql`(${domain} = ${SEED_DOMAIN} or ${domain} like ${`%.${SEED_DOMAIN}`})`;
+const emailDomain = (email: SQL | AnyPgColumn) => sql`split_part(${email}, '@', 2)`;
+
 // Jobs candidates can see: live, from a company the candidate hasn't hidden from.
 function jobIsVisibleTo(candidateId: string): SQL {
   return and(
     jobIsLive,
     sql`not exists (select 1 from candidate_profiles cp where cp.profile_id = ${candidateId} and ${companies.domain} = any(cp.hidden_company_domains))`,
+    sql`${isSeedDomain(companies.domain)} = ${isSeedDomain(emailDomain(sql`(select p.email from profiles p where p.id = ${candidateId})`))}`,
   )!;
 }
 
@@ -51,6 +58,7 @@ function candidateIsVisibleTo(companyDomain: string | AnyPgColumn): SQL {
     eq(profiles.type, "candidate"),
     candidateIsComplete,
     sql`not (${companyDomain} = any(${candidateProfiles.hiddenCompanyDomains}))`,
+    sql`${isSeedDomain(companyDomain)} = ${isSeedDomain(emailDomain(profiles.email))}`,
   )!;
 }
 

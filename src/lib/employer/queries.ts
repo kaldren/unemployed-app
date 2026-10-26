@@ -1,11 +1,13 @@
 import "server-only";
-import { count, desc, eq, ne, sql } from "drizzle-orm";
+import { and, count, desc, eq, ne, notLike, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { companies, companyMembers } from "@/db/schema";
+import { SEED_DOMAIN } from "@/lib/seed/domain";
 
 export type CompanyDecision = "approved" | "rejected";
 
 // Companies an admin may need to decide on: everything not approved, the ones the AI flagged first.
+// Dev seed companies (lib/seed) show only in development, since dev shares the production database.
 export async function listCompaniesToReview() {
   return db
     .select({
@@ -19,7 +21,14 @@ export async function listCompaniesToReview() {
     })
     .from(companies)
     .leftJoin(companyMembers, eq(companyMembers.companyId, companies.id))
-    .where(ne(companies.status, "approved"))
+    .where(
+      and(
+        ne(companies.status, "approved"),
+        process.env.NODE_ENV === "development"
+          ? undefined
+          : and(ne(companies.domain, SEED_DOMAIN), notLike(companies.domain, `%.${SEED_DOMAIN}`)),
+      ),
+    )
     .groupBy(companies.id)
     .orderBy(
       sql`case ${companies.status} when 'needs_review' then 0 when 'pending' then 1 else 2 end`,

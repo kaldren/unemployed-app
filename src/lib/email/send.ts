@@ -1,4 +1,5 @@
 import "server-only";
+import { isSeedEmail } from "@/lib/seed/domain";
 import type { Email } from "./templates";
 
 // Email goes out through Resend once RESEND_API_KEY and EMAIL_FROM are set; until then it's skipped.
@@ -9,6 +10,10 @@ export function isEmailConfigured() {
 export async function sendEmail(to: string, email: Email) {
   if (!isEmailConfigured()) {
     console.info(`Email not configured; skipped "${email.subject}"`);
+    return;
+  }
+  if (isSeedEmail(to)) {
+    console.info(`Seed address ${to}; skipped "${email.subject}"`);
     return;
   }
   const response = await fetch("https://api.resend.com/emails", {
