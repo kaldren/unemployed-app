@@ -86,7 +86,7 @@ A company is an organization, not a person, so it needs proof that the person wo
 
 | Env | Database / auth | Jobs | Notes |
 |---|---|---|---|
-| Local | Supabase CLI (`supabase start`, Docker) | `pnpm inngest:dev` | Seed script with fake candidates and jobs |
+| Local | Supabase CLI on OrbStack, started by `pnpm dev` (`pnpm db:use remote` to switch) | `pnpm inngest:dev` | Seed script with fake candidates and jobs |
 | Preview | Shared Supabase "staging" project | Inngest branch environment | One Vercel preview per PR |
 | Production | Supabase production project | Inngest production | Vercel production |
 

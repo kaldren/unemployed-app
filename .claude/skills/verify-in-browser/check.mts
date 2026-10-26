@@ -1,9 +1,9 @@
 // Opens routes in headless Chromium, screenshots each, and reports errors.
 // Usage: node .claude/skills/verify-in-browser/check.mts [--auth] [--out <dir>] [--mobile] <route>...
-import { existsSync, mkdirSync } from "node:fs";
+import "../../../scripts/load-env.mts";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, devices } from "@playwright/test";
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 const baseURL = "http://localhost:3000";
 const args = process.argv.slice(2);

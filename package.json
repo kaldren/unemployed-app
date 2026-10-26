@@ -3,19 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/seed.mts --soft && next dev",
+    "dev": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed.mts --soft && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "test:e2e": "playwright test",
+    "test:e2e": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db.mts && playwright test",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "verify": "pnpm lint && pnpm typecheck && pnpm test",
     "check": "pnpm verify && pnpm test:e2e",
     "demo:employer": "node scripts/demo-employer.mts",
-    "seed": "node scripts/seed.mts"
+    "seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed.mts",
+    "db:use": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db.mts use",
+    "db:reset": "supabase db reset && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db.mts",
+    "db:stop": "supabase stop"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",

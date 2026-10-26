@@ -1,8 +1,7 @@
-import { existsSync } from "node:fs";
+import "./scripts/load-env.mts";
 import { defineConfig, devices } from "@playwright/test";
 import { E2E_ADMIN } from "./e2e/support/admin-user";
 
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 // The dev server inherits this, so the e2e admin can open /admin.
 process.env.ADMIN_USER_IDS = [process.env.ADMIN_USER_IDS, E2E_ADMIN.id].filter(Boolean).join(",");
 process.env.CRON_SECRET ||= "e2e-cron-secret";

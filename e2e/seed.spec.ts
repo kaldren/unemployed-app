@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { SEED_ADMIN } from "../src/lib/seed/fixtures";
 import { runSeed, type SeedAccount } from "../src/lib/seed/run";
 import { seedCompleteCandidate } from "./support/candidate";
 import { scorePair, topCard } from "./support/matching";
@@ -7,12 +8,15 @@ import { admin, hasServiceRoleKey, signIn } from "./support/test-user";
 test.skip(!hasServiceRoleKey, "Set SUPABASE_SERVICE_ROLE_KEY in .env.local to run signed-in tests");
 
 let accounts: SeedAccount[];
+// Listed for the local database by scripts/db.mts; the hosted project doesn't list it.
+const withAdmin = (process.env.ADMIN_USER_IDS ?? "").split(",").includes(SEED_ADMIN.id);
 
 test.beforeAll(async ({}, testInfo) => {
   accounts = await runSeed({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
     baseUrl: testInfo.project.use.baseURL!,
+    withAdmin,
   });
 });
 
@@ -34,6 +38,13 @@ test("a seeded employer signs in from the report and has candidates", async ({ p
 
   await page.goto("/employers/matches");
   await expect(page.getByRole("list", { name: "Matches" }).getByRole("listitem")).toContainText("Ana Petrova");
+});
+
+test("the seeded admin signs in from the report and sees the company to review", async ({ page }) => {
+  test.skip(!withAdmin, "Only the local database lists the seeded admin");
+  await page.goto(account(SEED_ADMIN.email).signInUrl);
+  await expect(page).toHaveURL("/admin");
+  await expect(page.getByRole("region", { name: "quickcash.seed.test" })).toBeVisible();
 });
 
 test("real candidates never see seeded jobs, even when scored", async ({ context, page }) => {

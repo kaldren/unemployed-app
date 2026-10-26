@@ -45,10 +45,18 @@ of the MVP.
 
 ## Getting started
 
-Requires Node 24+, pnpm and Docker (for the Supabase CLI): `pnpm install`, `supabase start`, copy
-`.env.example` to `.env.local` and `.env`, then `pnpm dev`. Use `pnpm inngest:dev` to run
-background jobs.
+Requires Node 24+, pnpm, [OrbStack](https://orbstack.dev) and the Supabase CLI
+(`brew install orbstack supabase/tap/supabase`). `pnpm install`, copy `.env.example` to `.env.local`,
+then `pnpm dev`.
 
-`pnpm dev` re-seeds dummy candidates, companies and jobs (all under `*.seed.test`) and prints a
-one-time sign-in link for each account, also saved to `.seed-accounts.md`. Links expire after an
-hour; `pnpm seed` makes fresh ones without restarting.
+`pnpm dev` runs against a **local Supabase stack** (Postgres, Auth, Storage) in OrbStack containers:
+it starts them if needed, applies the migrations and writes `.env.development.local`, which overrides
+the Supabase settings in `.env.local`. Studio is at http://127.0.0.1:55323 and sign-in emails land in
+Mailpit at http://127.0.0.1:55324. `pnpm db:use remote` switches to the hosted project in `.env.local`
+(`pnpm db:use local` switches back); `pnpm db:migrate` and `pnpm test:e2e` follow the same switch.
+`pnpm db:reset` wipes the local database, `pnpm db:stop` stops the containers.
+
+`pnpm dev` also re-seeds dummy candidates, companies, jobs and an admin (all under `*.seed.test`)
+and prints a one-time sign-in link for each account, also saved to `.seed-accounts.md`. Links expire
+after an hour; `pnpm seed` makes fresh ones without restarting. Google and LinkedIn sign-in aren't set
+up locally; use the seed links.

@@ -49,3 +49,4 @@ next-env.d.ts
 
 # dev seed sign-in links
 /.seed-accounts.md
+/.db-target
