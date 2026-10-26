@@ -5,8 +5,9 @@ import { E2E_ADMIN } from "./e2e/support/admin-user";
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 // The dev server inherits this, so the e2e admin can open /admin.
 process.env.ADMIN_USER_IDS = [process.env.ADMIN_USER_IDS, E2E_ADMIN.id].filter(Boolean).join(",");
+process.env.CRON_SECRET ||= "e2e-cron-secret";
 
-// Its own port and build folder, so e2e never reuses the dev server you run on :3000 (it lacks the e2e admin above).
+// Its own port and build folder, so e2e never reuses the dev server you run on :3000 (it lacks the e2e env above).
 const port = 3100;
 const baseURL = `http://localhost:${port}`;
 

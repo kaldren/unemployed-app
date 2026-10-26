@@ -19,6 +19,7 @@ import {
   LanguagesSection,
   PreferencesSection,
   PrivacySection,
+  EmailSection,
   SkillsSection,
 } from "./sections";
 
@@ -171,19 +172,22 @@ async function ProfileEditor() {
       label: "Account",
       status: "optional",
       content: (
-        <Card asChild>
-          <section aria-labelledby="account-title">
-            <CardHeader>
-              <CardTitle asChild>
-                <h2 id="account-title">Account</h2>
-              </CardTitle>
-              <CardDescription>Signed in as {user.email}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DeleteAccount description="Deleting your account removes your profile, likes and matches for good." />
-            </CardContent>
-          </section>
-        </Card>
+        <div className="flex flex-col gap-6">
+          <EmailSection initial={p?.emailDigest ?? true} />
+          <Card asChild>
+            <section aria-labelledby="account-title">
+              <CardHeader>
+                <CardTitle asChild>
+                  <h2 id="account-title">Account</h2>
+                </CardTitle>
+                <CardDescription>Signed in as {user.email}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DeleteAccount description="Deleting your account removes your profile, likes and matches for good." />
+              </CardContent>
+            </section>
+          </Card>
+        </div>
       ),
     },
   ];

@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { requireEmployer } from "@/lib/auth";
+import { notifyMatchSoon } from "@/lib/email/notify";
 import { getJob } from "@/lib/jobs/queries";
 import { canCompanySee, recordEmployerSwipe } from "@/lib/matching/queries";
 import { SWIPE_ERROR, type SwipeResult } from "@/lib/matching/swipe";
@@ -26,6 +27,7 @@ export async function swipeCandidate(jobId: string, candidateId: string, liked: 
 
   try {
     const matched = await recordEmployerSwipe(job.id, parsed.data.candidateId, user.id, parsed.data.liked);
+    if (matched) notifyMatchSoon(job.id, parsed.data.candidateId);
     return { status: "ok", matched };
   } catch (error) {
     console.error("Employer swipe failed", error);

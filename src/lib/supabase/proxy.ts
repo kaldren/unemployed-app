@@ -6,7 +6,8 @@ import { HOME_PATH, LOGIN_PATH, type Portal } from "@/lib/portal";
 const LOGIN_PATHS: string[] = Object.values(LOGIN_PATH);
 
 // Paths a signed-out visitor may open, with everything under them. Everything else requires a session.
-const PUBLIC_PATHS = [...LOGIN_PATHS, "/auth", "/privacy", "/terms"];
+// Cron routes check their own secret.
+const PUBLIC_PATHS = [...LOGIN_PATHS, "/auth", "/privacy", "/terms", "/api/cron"];
 // The home page is the landing page for visitors; it's public by itself, not with what's under it.
 const PUBLIC_PAGES = ["/"];
 

@@ -107,6 +107,9 @@ const isAiMatch = and(
   gt(jobMatches.skillCoverage, SKILL_COVERAGE_THRESHOLD),
 )!;
 
+// The employer who decided on a candidate.
+const recruiters = aliasedTable(profiles, "recruiters");
+
 // When both sides had liked: the later of the two swipes.
 const matchedAt = sql`greatest(${candidateSwipes.createdAt}, ${employerSwipes.createdAt})`;
 
@@ -150,6 +153,73 @@ export async function getJobDeck(candidateId: string) {
 
 export type JobCard = Awaited<ReturnType<typeof getJobDeck>>[number];
 
+// Candidates due a daily digest: they want it, it hasn't gone out in the last day, and they can be matched.
+export async function listDigestCandidates(limit: number) {
+  return db
+    .select({ id: candidateProfiles.profileId, email: profiles.email, since: candidateProfiles.digestSentAt })
+    .from(candidateProfiles)
+    .innerJoin(profiles, eq(profiles.id, candidateProfiles.profileId))
+    .where(
+      and(
+        eq(candidateProfiles.emailDigest, true),
+        sql`(${candidateProfiles.digestSentAt} is null or ${candidateProfiles.digestSentAt} < now() - interval '20 hours')`,
+        candidateIsComplete,
+      ),
+    )
+    .orderBy(asc(candidateProfiles.digestSentAt))
+    .limit(limit);
+}
+
+// Jobs in the candidate's deck that the AI matched since `since` (or ever, when null).
+export async function countNewJobs(candidateId: string, since: Date | null) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(jobs)
+    .innerJoin(companies, eq(companies.id, jobs.companyId))
+    .innerJoin(candidateProfiles, eq(candidateProfiles.profileId, candidateId))
+    .innerJoin(jobMatches, isAiMatch)
+    .where(
+      and(
+        jobIsVisibleTo(candidateId),
+        pairFits,
+        since ? gt(jobMatches.scoredAt, since) : undefined,
+        sql`not exists (select 1 from candidate_swipes s where s.job_id = ${jobs.id} and s.profile_id = ${candidateId})`,
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+export async function stampDigestSent(candidateId: string) {
+  await db.execute(sql`update candidate_profiles set digest_sent_at = now() where profile_id = ${candidateId}`);
+}
+
+// Who to tell about a new match, and what about.
+export type MatchContacts = {
+  jobTitle: string;
+  companyName: string;
+  candidateEmail: string;
+  candidateName: string | null;
+  employerEmail: string | null;
+};
+
+export async function getMatchContacts(jobId: string, candidateId: string): Promise<MatchContacts | null> {
+  const [row] = await db
+    .select({
+      jobTitle: jobs.title,
+      companyName: companies.name,
+      candidateEmail: profiles.email,
+      candidateName: profiles.fullName,
+      employerEmail: recruiters.email,
+    })
+    .from(employerSwipes)
+    .innerJoin(jobs, eq(jobs.id, employerSwipes.jobId))
+    .innerJoin(companies, eq(companies.id, jobs.companyId))
+    .innerJoin(profiles, eq(profiles.id, employerSwipes.candidateId))
+    .leftJoin(recruiters, eq(recruiters.id, employerSwipes.decidedBy))
+    .where(and(eq(employerSwipes.jobId, jobId), eq(employerSwipes.candidateId, candidateId)));
+  return row ?? null;
+}
+
 // One-query check for swipes; the full profile isn't needed for it.
 export async function isCandidateComplete(candidateId: string) {
   const [row] = await db
@@ -183,8 +253,6 @@ export async function recordCandidateSwipe(candidateId: string, jobId: string, l
     .where(and(eq(employerSwipes.jobId, jobId), eq(employerSwipes.candidateId, candidateId), eq(employerSwipes.liked, true)));
   return Boolean(match);
 }
-
-const recruiters = aliasedTable(profiles, "recruiters");
 
 // Jobs where the candidate and the employer liked each other, newest match first.
 export async function listCandidateMatches(candidateId: string) {

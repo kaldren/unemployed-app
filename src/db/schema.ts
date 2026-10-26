@@ -140,6 +140,9 @@ export const candidateProfiles = pgTable(
     resumeUploadedAt: timestamp("resume_uploaded_at", { withTimezone: true }),
     // Last time the AI looked for jobs for this candidate.
     matchedAt: timestamp("matched_at", { withTimezone: true }),
+    // The daily email about new matches: whether they want it, and when it last went out.
+    emailDigest: boolean("email_digest").notNull().default(true),
+    digestSentAt: timestamp("digest_sent_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

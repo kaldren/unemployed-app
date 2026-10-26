@@ -6,3 +6,6 @@ export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@exa
 
 // Who runs the service, named in the privacy policy and terms. Set NEXT_PUBLIC_OPERATOR_NAME before launch.
 export const OPERATOR_NAME = process.env.NEXT_PUBLIC_OPERATOR_NAME || SITE_NAME;
+
+// The public address, for links in emails. Set NEXT_PUBLIC_SITE_URL in production.
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
