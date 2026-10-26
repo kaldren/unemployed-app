@@ -108,6 +108,10 @@ const pairFits = sql`(
   )
 )`;
 
+// Jobs the candidate hasn't liked or passed yet.
+const notSwipedBy = (candidateId: string) =>
+  sql`not exists (select 1 from candidate_swipes s where s.job_id = ${jobs.id} and s.profile_id = ${candidateId})`;
+
 // The AI found enough of the job's skills in the profile for both sides to see the pair.
 const isAiMatch = and(
   eq(jobMatches.jobId, jobs.id),
@@ -149,7 +153,7 @@ export async function getJobDeck(candidateId: string) {
       and(
         jobIsVisibleTo(candidateId),
         pairFits,
-        sql`not exists (select 1 from candidate_swipes s where s.job_id = ${jobs.id} and s.profile_id = ${candidateId})`,
+        notSwipedBy(candidateId),
       ),
     )
     .orderBy(desc(jobMatches.score), desc(jobs.createdAt), asc(jobs.id))
@@ -174,11 +178,11 @@ export async function listDigestCandidates(limit: number) {
         candidateIsComplete,
       ),
     )
-    .orderBy(asc(candidateProfiles.digestSentAt))
+    .orderBy(sql`${candidateProfiles.digestSentAt} asc nulls first`)
     .limit(limit);
 }
 
-// Jobs in the candidate's deck that the AI matched since `since` (or ever, when null).
+// Jobs in the candidate's deck that the AI first scored since `since` (or ever, when null).
 export async function countNewJobs(candidateId: string, since: Date | null) {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -190,15 +194,15 @@ export async function countNewJobs(candidateId: string, since: Date | null) {
       and(
         jobIsVisibleTo(candidateId),
         pairFits,
-        since ? gt(jobMatches.scoredAt, since) : undefined,
-        sql`not exists (select 1 from candidate_swipes s where s.job_id = ${jobs.id} and s.profile_id = ${candidateId})`,
+        since ? gt(jobMatches.firstScoredAt, since) : undefined,
+        notSwipedBy(candidateId),
       ),
     );
   return row?.count ?? 0;
 }
 
 export async function stampDigestSent(candidateId: string) {
-  await db.execute(sql`update candidate_profiles set digest_sent_at = now() where profile_id = ${candidateId}`);
+  await db.update(candidateProfiles).set({ digestSentAt: sql`now()` }).where(eq(candidateProfiles.profileId, candidateId));
 }
 
 // Who to tell about a new match, and what about.
@@ -248,18 +252,27 @@ export async function canCandidateSee(candidateId: string, jobId: string) {
   return Boolean(row);
 }
 
-// Saves the candidate's like or pass (a later swipe replaces it). True when it makes a match.
-export async function recordCandidateSwipe(candidateId: string, jobId: string, liked: boolean) {
-  await db
+// The outcome of a swipe: whether the pair is matched, and whether this swipe made the match (so it's
+// announced once, not again when the same like is sent twice).
+export type SwipeOutcome = { matched: boolean; isNewMatch: boolean };
+
+// Saves the candidate's like or pass (a later swipe replaces it).
+export async function recordCandidateSwipe(candidateId: string, jobId: string, liked: boolean): Promise<SwipeOutcome> {
+  const changed = await db
     .insert(candidateSwipes)
     .values({ profileId: candidateId, jobId, liked })
-    .onConflictDoUpdate({ target: [candidateSwipes.profileId, candidateSwipes.jobId], set: { liked } });
-  if (!liked) return false;
+    .onConflictDoUpdate({
+      target: [candidateSwipes.profileId, candidateSwipes.jobId],
+      set: { liked },
+      setWhere: sql`${candidateSwipes.liked} is distinct from ${liked}`,
+    })
+    .returning({ jobId: candidateSwipes.jobId });
+  if (!liked) return { matched: false, isNewMatch: false };
   const [match] = await db
     .select({ jobId: employerSwipes.jobId })
     .from(employerSwipes)
     .where(and(eq(employerSwipes.jobId, jobId), eq(employerSwipes.candidateId, candidateId), eq(employerSwipes.liked, true)));
-  return Boolean(match);
+  return { matched: Boolean(match), isNewMatch: Boolean(match) && changed.length > 0 };
 }
 
 // Jobs where the candidate and the employer liked each other, newest match first.
@@ -376,21 +389,28 @@ export async function canCompanySee(jobId: string, companyDomain: string, candid
   return Boolean(row);
 }
 
-// Saves the employer's like or pass for a job (a later swipe replaces it). True when it makes a match.
-export async function recordEmployerSwipe(jobId: string, candidateId: string, employerId: string, liked: boolean) {
-  await db
+// Saves the employer's like or pass for a job (a later swipe replaces it).
+export async function recordEmployerSwipe(
+  jobId: string,
+  candidateId: string,
+  employerId: string,
+  liked: boolean,
+): Promise<SwipeOutcome> {
+  const changed = await db
     .insert(employerSwipes)
     .values({ jobId, candidateId, decidedBy: employerId, liked })
     .onConflictDoUpdate({
       target: [employerSwipes.jobId, employerSwipes.candidateId],
       set: { liked, decidedBy: employerId },
-    });
-  if (!liked) return false;
+      setWhere: sql`${employerSwipes.liked} is distinct from ${liked}`,
+    })
+    .returning({ jobId: employerSwipes.jobId });
+  if (!liked) return { matched: false, isNewMatch: false };
   const [match] = await db
     .select({ jobId: candidateSwipes.jobId })
     .from(candidateSwipes)
     .where(and(eq(candidateSwipes.jobId, jobId), eq(candidateSwipes.profileId, candidateId), eq(candidateSwipes.liked, true)));
-  return Boolean(match);
+  return { matched: Boolean(match), isNewMatch: Boolean(match) && changed.length > 0 };
 }
 
 // Candidates who matched any of the company's jobs, newest match first.

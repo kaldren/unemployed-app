@@ -103,7 +103,7 @@ async function createEmployer(user: User): Promise<AuthError | null> {
     await tx.insert(companyMembers).values({ profileId: user.id, companyId, role: created ? "owner" : "member" });
     return created?.id ?? null;
   });
-  if (createdCompanyId) vetCompanySoon(createdCompanyId);
+  if (createdCompanyId) vetCompanySoon(createdCompanyId, domain);
   return null;
 }
 

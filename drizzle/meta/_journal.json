@@ -99,6 +99,13 @@
       "when": 1793047216847,
       "tag": "0013_email_digest",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793047753823,
+      "tag": "0014_first_scored_at",
+      "breakpoints": true
     }
   ]
 }

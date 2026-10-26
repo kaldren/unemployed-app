@@ -482,6 +482,8 @@ export const jobMatches = pgTable(
     // Hash of everything the model saw; the same input isn't scored again.
     inputHash: text("input_hash").notNull(),
     scoredAt: timestamp("scored_at", { withTimezone: true }).notNull().defaultNow(),
+    // When the pair was first scored; rescoring doesn't change it, so the digest counts only new pairs.
+    firstScoredAt: timestamp("first_scored_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.jobId, t.candidateId] }),

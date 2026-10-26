@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { z } from "zod";
 
 // How much homepage text the AI sees. Enough to tell what a company does.
@@ -33,6 +34,26 @@ export function isFetchableHost(host: string) {
   if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return false;
   if (/^[\d.]+$/.test(host)) return false;
   return !isReservedDomain(host) && !host.endsWith(".internal");
+}
+
+// Not a private, loopback, link-local, shared or multicast address (IPv4 or IPv6).
+export function isPublicIp(address: string) {
+  if (isIP(address) === 4) {
+    const [a, b] = address.split(".").map(Number) as [number, number];
+    return !(
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224
+    );
+  }
+  const v6 = address.toLowerCase();
+  if (v6.startsWith("::ffff:")) return isPublicIp(v6.slice(7));
+  return !(v6 === "::" || v6 === "::1" || /^f[cd]/.test(v6) || /^fe[89ab]/.test(v6) || v6.startsWith("ff"));
 }
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'", nbsp: " " };

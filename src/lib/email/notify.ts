@@ -22,18 +22,19 @@ export function notifyMatchSoon(jobId: string, candidateId: string) {
 // Candidates per digest run; the cron runs daily, so anyone left over goes out the next day.
 const DIGESTS_PER_RUN = 500;
 
-// Emails each candidate who wants it how many new jobs matched them since their last digest.
-// Candidates with nothing new get nothing, and keep their stamp so the next digest counts from it.
+// Emails each candidate who wants it how many new jobs matched them since their last check.
+// Candidates with nothing new get no email but are stamped too, so the next run moves on to others.
 export async function sendDigests() {
   if (!isEmailConfigured()) return { sent: 0, skipped: "email not configured" };
   let sent = 0;
   for (const candidate of await listDigestCandidates(DIGESTS_PER_RUN)) {
-    const count = await countNewJobs(candidate.id, candidate.since);
-    if (count === 0) continue;
     try {
-      await sendEmail(candidate.email, digestEmail({ count }));
+      const count = await countNewJobs(candidate.id, candidate.since);
+      if (count > 0) {
+        await sendEmail(candidate.email, digestEmail({ count }));
+        sent++;
+      }
       await stampDigestSent(candidate.id);
-      sent++;
     } catch (error) {
       console.error("Digest email failed", error);
     }

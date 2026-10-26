@@ -22,8 +22,8 @@ export async function swipeJob(jobId: string, liked: boolean): Promise<SwipeResu
   if (!visible) return { status: "error", message: "This job isn't available anymore." };
 
   try {
-    const matched = await recordCandidateSwipe(user.id, parsed.data.jobId, parsed.data.liked);
-    if (matched) notifyMatchSoon(parsed.data.jobId, user.id);
+    const { matched, isNewMatch } = await recordCandidateSwipe(user.id, parsed.data.jobId, parsed.data.liked);
+    if (isNewMatch) notifyMatchSoon(parsed.data.jobId, user.id);
     return { status: "ok", matched };
   } catch (error) {
     console.error("Candidate swipe failed", error);
