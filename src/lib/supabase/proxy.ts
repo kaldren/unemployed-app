@@ -5,11 +5,14 @@ import { HOME_PATH, LOGIN_PATH, type Portal } from "@/lib/portal";
 
 const LOGIN_PATHS: string[] = Object.values(LOGIN_PATH);
 
-// Paths a signed-out visitor may open. Everything else requires a session.
-const PUBLIC_PATHS = [...LOGIN_PATHS, "/auth"];
+// Paths a signed-out visitor may open, with everything under them. Everything else requires a session.
+const PUBLIC_PATHS = [...LOGIN_PATHS, "/auth", "/privacy", "/terms"];
+// The home page is the landing page for visitors; it's public by itself, not with what's under it.
+const PUBLIC_PAGES = ["/"];
 
 const isUnder = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`);
-const isPublic = (pathname: string) => PUBLIC_PATHS.some((path) => isUnder(pathname, path));
+const isPublic = (pathname: string) =>
+  PUBLIC_PAGES.includes(pathname) || PUBLIC_PATHS.some((path) => isUnder(pathname, path));
 const portalOf = (pathname: string): Portal => (isUnder(pathname, HOME_PATH.employer) ? "employer" : "candidate");
 
 // Refreshes the Supabase session cookie and does optimistic auth redirects.

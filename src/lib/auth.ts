@@ -10,6 +10,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = Pick<Profile, "id" | "type" | "fullName" | "email" | "avatarUrl">;
 
+// The signed-in user's id, or null for a visitor. For public pages that look different when signed in.
+export async function getSessionUserId(): Promise<string | null> {
+  await connection();
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims.sub ?? null;
+}
+
 // Verifies the session and returns the signed-in user's profile.
 // Redirects to /login when signed out. Call it from every protected page or action.
 export const getCurrentUser = cache(async (): Promise<CurrentUser> => {

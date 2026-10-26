@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
+import { DeleteAccount } from "@/components/delete-account";
 import { PageLoading } from "@/components/page-loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,10 @@ async function Jobs() {
               ))}
             </ul>
           )}
+
+          <section aria-label="Account" className="pt-10">
+            <DeleteAccount description="Deleting your account keeps your company and its jobs for your teammates. If you're its only member, they're deleted too." />
+          </section>
         </div>
       </main>
     </>
