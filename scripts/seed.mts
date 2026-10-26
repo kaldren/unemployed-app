@@ -4,7 +4,7 @@
 // `--soft` (used by `pnpm dev`) reports a failure but exits 0, so the app still starts.
 import "./load-env.mts";
 import { writeFileSync } from "node:fs";
-import { SEED_ADMIN } from "../src/lib/seed/fixtures.ts";
+import { listsSeedAdmin } from "../src/lib/seed/fixtures.ts";
 import { runSeed, type SeedAccount } from "../src/lib/seed/run.ts";
 
 const soft = process.argv.includes("--soft");
@@ -23,8 +23,7 @@ const baseUrl = `http://localhost:${process.env.PORT ?? 3000}`;
 const started = Date.now();
 let accounts: SeedAccount[];
 try {
-  const withAdmin = (process.env.ADMIN_USER_IDS ?? "").split(",").includes(SEED_ADMIN.id);
-  accounts = await runSeed({ url, serviceRoleKey, baseUrl, withAdmin });
+  accounts = await runSeed({ url, serviceRoleKey, baseUrl, withAdmin: listsSeedAdmin() });
 } catch (error) {
   fail(error instanceof Error ? error.message : JSON.stringify(error));
 }

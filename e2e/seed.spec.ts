@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { SEED_ADMIN } from "../src/lib/seed/fixtures";
+import { listsSeedAdmin, SEED_ADMIN } from "../src/lib/seed/fixtures";
 import { runSeed, type SeedAccount } from "../src/lib/seed/run";
 import { seedCompleteCandidate } from "./support/candidate";
 import { scorePair, topCard } from "./support/matching";
@@ -9,7 +9,7 @@ test.skip(!hasServiceRoleKey, "Set SUPABASE_SERVICE_ROLE_KEY in .env.local to ru
 
 let accounts: SeedAccount[];
 // Listed for the local database by scripts/db.mts; the hosted project doesn't list it.
-const withAdmin = (process.env.ADMIN_USER_IDS ?? "").split(",").includes(SEED_ADMIN.id);
+const withAdmin = listsSeedAdmin();
 
 test.beforeAll(async ({}, testInfo) => {
   accounts = await runSeed({

@@ -23,11 +23,12 @@ function readTarget(): Target {
 }
 
 function switchToLocal() {
-  if (!succeeds("orb", ["status"])) {
-    console.log("Starting OrbStack…");
-    run("orb", ["start"]);
-  }
+  // Already running (on OrbStack or any other Docker engine): nothing to start.
   if (!succeeds("supabase", ["status"])) {
+    if (!succeeds("docker", ["info"])) {
+      console.log("Starting OrbStack…");
+      run("orb", ["start"]);
+    }
     console.log("Starting local Supabase (first run downloads the images)…");
     run("supabase", ["start"]);
   }
@@ -35,24 +36,23 @@ function switchToLocal() {
     string,
     string
   >;
-  writeFileSync(
-    LOCAL_ENV_FILE,
-    [
-      "# Written by scripts/db.mts for the local Supabase stack; `pnpm db:use remote` removes it.",
-      "# Overrides .env.local. The keys are Supabase's public local-development defaults.",
-      `NEXT_PUBLIC_SUPABASE_URL=${status.API_URL}`,
-      `NEXT_PUBLIC_SUPABASE_ANON_KEY=${status.ANON_KEY}`,
-      `SUPABASE_SERVICE_ROLE_KEY=${status.SERVICE_ROLE_KEY}`,
-      `DATABASE_URL=${status.DB_URL}`,
-      "NEXT_PUBLIC_SITE_URL=http://localhost:3000",
-      "# The seeded admin (see the seed report) can open /admin.",
-      `ADMIN_USER_IDS=${SEED_ADMIN.id}`,
-      "# No real mail from local data. Auth emails (magic links) land in Mailpit:",
-      `# ${status.MAILPIT_URL ?? status.INBUCKET_URL}`,
-      "RESEND_API_KEY=",
-      "",
-    ].join("\n"),
-  );
+  const env = [
+    "# Written by scripts/db.mts for the local Supabase stack; `pnpm db:use remote` removes it.",
+    "# Overrides .env.local. The keys are Supabase's public local-development defaults.",
+    `NEXT_PUBLIC_SUPABASE_URL=${status.API_URL}`,
+    `NEXT_PUBLIC_SUPABASE_ANON_KEY=${status.ANON_KEY}`,
+    `SUPABASE_SERVICE_ROLE_KEY=${status.SERVICE_ROLE_KEY}`,
+    `DATABASE_URL=${status.DB_URL}`,
+    "NEXT_PUBLIC_SITE_URL=http://localhost:3000",
+    "# The seeded admin (see the seed report) can open /admin.",
+    `ADMIN_USER_IDS=${SEED_ADMIN.id}`,
+    "# No real mail from local data. Auth emails (magic links) land in Mailpit:",
+    `# ${status.MAILPIT_URL ?? status.INBUCKET_URL}`,
+    "RESEND_API_KEY=",
+    "",
+  ].join("\n");
+  // Rewriting an unchanged file would make a running `next dev` reload its env.
+  if (!existsSync(LOCAL_ENV_FILE) || readFileSync(LOCAL_ENV_FILE, "utf8") !== env) writeFileSync(LOCAL_ENV_FILE, env);
   // Quiet unless it fails: drizzle-kit prints a NOTICE for every migration already applied.
   const migrate = spawnSync("pnpm", ["exec", "drizzle-kit", "migrate"], { encoding: "utf8" });
   if (migrate.status !== 0) {

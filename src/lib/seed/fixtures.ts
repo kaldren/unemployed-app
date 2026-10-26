@@ -61,6 +61,14 @@ export const SEED_ADMIN = {
   fullName: "Seed Admin",
 };
 
+// Whether ADMIN_USER_IDS (comma-separated, as isAdmin in lib/auth reads it) lists SEED_ADMIN.
+export function listsSeedAdmin(adminUserIds = process.env.ADMIN_USER_IDS ?? "") {
+  return adminUserIds
+    .split(",")
+    .map((id) => id.trim())
+    .includes(SEED_ADMIN.id);
+}
+
 const candidate = (c: Omit<SeedCandidate, "email">): SeedCandidate => ({ ...c, email: `${c.key}@${SEED_DOMAIN}` });
 
 export const CANDIDATES: SeedCandidate[] = [
