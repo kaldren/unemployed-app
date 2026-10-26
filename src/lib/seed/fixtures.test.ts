@@ -65,7 +65,8 @@ describe("seed fixtures", () => {
     for (const c of CANDIDATES) {
       expect(matches.some((m) => m.candidateKey === c.key && !swiped.has(`${c.key}:${m.jobKey}`))).toBe(true);
     }
-    for (const job of liveJobs) expect(matches.some((m) => m.jobKey === job.key)).toBe(true);
+    // Several candidates per job, so employers have a real deck to swipe.
+    for (const job of liveJobs) expect(matches.filter((m) => m.jobKey === job.key).length).toBeGreaterThanOrEqual(3);
   });
 
   it("only swipes on matched pairs", () => {

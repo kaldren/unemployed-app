@@ -71,7 +71,8 @@ export function listsSeedAdmin(adminUserIds = process.env.ADMIN_USER_IDS ?? "") 
 
 const candidate = (c: Omit<SeedCandidate, "email">): SeedCandidate => ({ ...c, email: `${c.key}@${SEED_DOMAIN}` });
 
-export const CANDIDATES: SeedCandidate[] = [
+// Hand-written profiles, with the stories the swipes below rely on.
+const FEATURED: SeedCandidate[] = [
   candidate({
     key: "ana.petrova",
     fullName: "Ana Petrova",
@@ -220,6 +221,83 @@ export const CANDIDATES: SeedCandidate[] = [
     ],
   }),
 ];
+
+const NATIVE: Record<string, string> = { BG: "bg", DE: "de", RO: "ro", CZ: "cs", ES: "es", NL: "nl", PL: "pl", SE: "sv", HR: "hr", FR: "fr" };
+
+// More candidates, so every live job has several people in its deck. Each one has all the skills of
+// the jobs it should match (coverage must be over 75%), so these are written tersely.
+function extra(
+  key: string,
+  fullName: string,
+  headline: string,
+  [locationCity, locationCountry]: [string, string],
+  seniority: SeedCandidate["seniority"],
+  workModes: WorkMode[],
+  skills: string[],
+  role: string,
+  more: Partial<SeedCandidate> = {},
+): SeedCandidate {
+  const [first, second] = skills;
+  return candidate({
+    key,
+    fullName,
+    headline,
+    about: `${headline} working mostly with ${first} and ${second}. Looking for a team that ships often.`,
+    locationCity,
+    locationCountry,
+    seniority,
+    workModes,
+    skills,
+    role,
+    experiences:
+      seniority === "junior"
+        ? []
+        : [{ companyName: `${locationCity} Software`, title: headline, startDate: "2021-01-01", description: `Day-to-day ${first} and ${second}.` }],
+    education:
+      seniority === "junior"
+        ? { institution: `University of ${locationCity}`, degree: "BSc", fieldOfStudy: "Computer Science", startYear: 2022, endYear: 2026 }
+        : undefined,
+    languages: [
+      { code: NATIVE[locationCountry] ?? "en", proficiency: "native" },
+      { code: "en", proficiency: "professional" },
+    ],
+    ...more,
+  });
+}
+
+const BACKEND = ["TypeScript", "Node.js", "PostgreSQL", "Docker"];
+const DEVOPS = ["Kubernetes", "Terraform", "AWS", "Docker"];
+const DESIGN = ["Figma", "UX research", "Prototyping"];
+const JUNIOR_FRONTEND = ["React", "JavaScript", "HTML", "CSS"];
+const ANALYST = ["SQL", "Python", "Power BI"];
+
+const MORE: SeedCandidate[] = [
+  // Backend and full-stack (Northwind backend, Copperleaf full-stack).
+  extra("dimitar.kolev", "Dimitar Kolev", "Senior full-stack engineer", ["Sofia", "BG"], "senior", ["remote"], [...BACKEND, "React"], "Full-stack Engineer", { salaryMin: 60000 }),
+  extra("sofia.marin", "Sofia Marin", "Backend engineer", ["Bucharest", "RO"], "mid", ["remote", "hybrid"], [...BACKEND, "Redis"], "Backend Engineer"),
+  extra("tomas.novak", "Tomas Novak", "Senior software engineer", ["Prague", "CZ"], "senior", ["remote"], [...BACKEND, "React", "GraphQL"], "Full-stack Engineer", { salaryMin: 65000 }),
+  extra("lucia.garcia", "Lucia Garcia", "Full-stack developer", ["Madrid", "ES"], "mid", ["remote"], ["TypeScript", "React", "Node.js", "PostgreSQL", "Next.js", "CSS"], "Full-stack Engineer"),
+  // Frontend (Northwind frontend; Lucia above fits too).
+  extra("mila.stoyanova", "Mila Stoyanova", "Frontend developer", ["Sofia", "BG"], "mid", ["remote", "hybrid"], ["React", "TypeScript", "Next.js", "CSS", "JavaScript", "HTML"], "Frontend Engineer"),
+  extra("pieter.devries", "Pieter de Vries", "Senior frontend engineer", ["Amsterdam", "NL"], "senior", ["remote"], ["React", "TypeScript", "Next.js", "CSS", "Storybook"], "Frontend Engineer", { salaryMin: 62000 }),
+  // DevOps (Northwind DevOps).
+  extra("ivan.petkov", "Ivan Petkov", "Platform engineer", ["Plovdiv", "BG"], "senior", ["remote"], [...DEVOPS, "Linux"], "DevOps Engineer"),
+  extra("anna.kowalska", "Anna Kowalska", "Cloud engineer", ["Warsaw", "PL"], "mid", ["remote"], [...DEVOPS, "Python"], "DevOps Engineer", { salaryMin: 55000 }),
+  extra("erik.lindqvist", "Erik Lindqvist", "Senior SRE", ["Stockholm", "SE"], "senior", ["remote"], [...DEVOPS, "Go"], "DevOps Engineer", { salaryMin: 80000 }),
+  // Data (Bluefin analyst: hybrid in Sofia, so Bulgarians or people who'd relocate).
+  extra("georgi.todorov", "Georgi Todorov", "Junior data analyst", ["Sofia", "BG"], "junior", ["hybrid"], [...ANALYST, "Excel"], "Data Analyst", { salaryMin: 25000 }),
+  extra("radostina.ilieva", "Radostina Ilieva", "BI analyst", ["Sofia", "BG"], "mid", ["hybrid", "onsite"], [...ANALYST, "Tableau"], "Data Analyst", { salaryMin: 32000 }),
+  extra("marek.horvat", "Marek Horvat", "Data analyst", ["Zagreb", "HR"], "mid", ["hybrid", "remote"], ANALYST, "Data Analyst", { openToRelocation: true }),
+  // Junior frontend (Bluefin: hybrid in Sofia; Mila above fits too).
+  extra("viktor.angelov", "Viktor Angelov", "Junior frontend developer", ["Sofia", "BG"], "junior", ["hybrid", "onsite"], JUNIOR_FRONTEND, "Frontend Engineer"),
+  extra("teodora.vasileva", "Teodora Vasileva", "Junior web developer", ["Varna", "BG"], "junior", ["hybrid", "remote"], [...JUNIOR_FRONTEND, "Figma"], "Frontend Engineer"),
+  // Design (Bluefin designer).
+  extra("chloe.martin", "Chloe Martin", "Product designer", ["Lyon", "FR"], "mid", ["remote"], [...DESIGN, "User testing"], "Product Designer"),
+  extra("boris.nikolov", "Boris Nikolov", "Senior product designer", ["Sofia", "BG"], "senior", ["remote", "hybrid"], [...DESIGN, "Design systems"], "Product Designer", { salaryMin: 50000 }),
+  extra("julia.schmidt", "Julia Schmidt", "UX designer", ["Munich", "DE"], "mid", ["remote"], DESIGN, "Product Designer"),
+];
+
+export const CANDIDATES: SeedCandidate[] = [...FEATURED, ...MORE];
 
 const employer = (name: string, domain: string, role: SeedEmployer["role"] = "owner"): SeedEmployer => ({
   email: `${name.split(" ")[0]!.toLowerCase()}@${domain}`,
