@@ -9,6 +9,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary-hover",
+        spark:
+          "bg-linear-to-r from-spark-1 to-spark-2 text-primary-foreground shadow-sm shadow-spark-2/25 hover:brightness-110 active:scale-95",
         outline:
           "border-input bg-card hover:bg-accent hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

@@ -2,7 +2,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
-// Design system guard (see DESIGN.md): app code styles with semantic tokens and
+// Design system guard (see DESIGNSYSTEM.md): app code styles with semantic tokens and
 // src/components/ui, never with raw Tailwind palette colors, arbitrary colors or dark: variants.
 const PALETTE =
   "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white";
@@ -25,7 +25,7 @@ const design = {
             if (match) {
               context.report({
                 node,
-                message: `"${match[0]}" is a ${what}. Use a design token or a src/components/ui component instead (see DESIGN.md).`,
+                message: `"${match[0]}" is a ${what}. Use a design token or a src/components/ui component instead (see DESIGNSYSTEM.md).`,
               });
               return;
             }

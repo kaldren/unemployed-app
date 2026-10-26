@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { SparkText } from "@/components/brand";
 import { GoogleButton } from "@/components/google-button";
 import { ConsentNote, SiteFooter } from "@/components/site-footer";
 import { safeNextPath } from "@/lib/auth";
@@ -19,7 +20,9 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       <main className="flex flex-1 items-center justify-center px-4 pb-16">
         <div className="flex w-full max-w-sm flex-col gap-10 text-center">
           <div className="flex flex-col gap-3">
-            <h1 className="text-4xl font-semibold tracking-tight">{SITE_NAME}</h1>
+            <h1 className="text-4xl font-semibold tracking-tight">
+              <SparkText>{SITE_NAME}</SparkText>
+            </h1>
             <p className="text-base text-muted-foreground">{SITE_TAGLINE}</p>
           </div>
           {/* searchParams are request data, so they stream in behind a boundary. */}

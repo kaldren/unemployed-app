@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { COUNTRIES } from "@/lib/candidate/locales";
@@ -13,8 +14,12 @@ export function JobCardBody({ job }: { job: JobCard }) {
   const facts = [locationLabel(job), salaryLabel(job)].filter(Boolean).join(" · ");
   return (
     <>
+      <div aria-hidden className="-mt-(--card-spacing) h-1.5 bg-linear-to-r from-spark-1 via-spark-2 to-spark-3" />
       <CardHeader>
-        <CardDescription>{job.companyName}</CardDescription>
+        <div className="flex items-center justify-between gap-3">
+          <CardDescription>{job.companyName}</CardDescription>
+          <FitBadge coverage={job.skillCoverage} />
+        </div>
         <CardTitle asChild>
           <h2 className="text-2xl tracking-tight">{job.title}</h2>
         </CardTitle>
@@ -75,11 +80,22 @@ export function CandidateCardBody({ candidate }: { candidate: CandidateCard }) {
   );
 }
 
+// How much of the job's skills the candidate has: the share the AI checked.
+function FitBadge({ coverage }: { coverage: number }) {
+  if (coverage <= 0) return null;
+  return (
+    <Badge className="h-6 bg-success-soft px-2.5 text-success-soft-foreground">
+      <Sparkles aria-hidden />
+      {coverage}% skills match
+    </Badge>
+  );
+}
+
 // The AI's reason for the match, told to whoever is looking.
 function MatchReason({ label, reason }: { label: string; reason: string }) {
   return (
-    <section className="flex flex-col gap-1.5 rounded-lg bg-muted p-4" aria-label={label}>
-      <h3 className="text-xs text-muted-foreground">{label}</h3>
+    <section className="flex flex-col gap-1.5 rounded-lg bg-accent p-4" aria-label={label}>
+      <h3 className="text-xs font-medium text-primary">{label}</h3>
       <p>{reason}</p>
     </section>
   );
