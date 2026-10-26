@@ -1,10 +1,8 @@
 // Creates (or refreshes) a demo employer with an approved company, and prints a one-time sign-in link.
 // Usage: pnpm demo:employer [base url, default http://localhost:3000]
 // Needs SUPABASE_SERVICE_ROLE_KEY in .env.local. The link works once and expires after an hour; rerun for a new one.
-import { existsSync } from "node:fs";
+import "./load-env.mts";
 import { createClient } from "@supabase/supabase-js";
-
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 const DEMO = { email: "demo@acme-demo.test", fullName: "Demo Employer" };
 const COMPANY = { domain: "acme-demo.test", name: "Acme Demo" };

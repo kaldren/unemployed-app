@@ -3,10 +3,10 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { normalizeSlug } from "../candidate/slug.ts";
 import { isSeedEmail, SEED_DOMAIN } from "./domain.ts";
-import { CANDIDATES, COMPANIES, SEED_ROLES, SEED_SKILLS, seedMatches, SWIPES } from "./fixtures.ts";
+import { CANDIDATES, COMPANIES, SEED_ADMIN, SEED_ROLES, SEED_SKILLS, seedMatches, SWIPES } from "./fixtures.ts";
 
 export type SeedAccount = {
-  portal: "candidate" | "employer";
+  portal: "candidate" | "employer" | "admin";
   email: string;
   fullName: string;
   // Headline for candidates; company, role and status for employers.
@@ -46,13 +46,19 @@ async function catalogIds(supabase: SupabaseClient, table: "skills" | "roles", n
   return (name: string) => bySlug.get(normalizeSlug(name))!;
 }
 
-async function createUser(supabase: SupabaseClient, email: string, fullName: string, type: SeedAccount["portal"]) {
+async function createUser(
+  supabase: SupabaseClient,
+  email: string,
+  fullName: string,
+  type: "candidate" | "employer",
+  id?: string,
+) {
   const { data } = check(
-    await supabase.auth.admin.createUser({ email, email_confirm: true, user_metadata: { full_name: fullName } }),
+    await supabase.auth.admin.createUser({ id, email, email_confirm: true, user_metadata: { full_name: fullName } }),
   );
-  const id = data.user!.id;
-  check(await supabase.from("profiles").insert({ id, type, email, full_name: fullName }));
-  return id;
+  const userId = data.user!.id;
+  check(await supabase.from("profiles").insert({ id: userId, type, email, full_name: fullName }));
+  return userId;
 }
 
 // A one-time link that signs the user in through the app's own callback, like the magic-link email does.
@@ -60,12 +66,24 @@ async function signInUrl(supabase: SupabaseClient, baseUrl: string, email: strin
   const { data } = check(await supabase.auth.admin.generateLink({ type: "magiclink", email }));
   const url = new URL("/auth/callback", baseUrl);
   if (portal === "employer") url.searchParams.set("portal", "employer");
+  if (portal === "admin") url.searchParams.set("next", "/admin");
   url.searchParams.set("type", "magiclink");
   url.searchParams.set("token_hash", data.properties!.hashed_token);
   return url.toString();
 }
 
-export async function runSeed({ url, serviceRoleKey, baseUrl }: { url: string; serviceRoleKey: string; baseUrl: string }) {
+// `withAdmin` also creates SEED_ADMIN; pass it only where ADMIN_USER_IDS lists that id.
+export async function runSeed({
+  url,
+  serviceRoleKey,
+  baseUrl,
+  withAdmin = false,
+}: {
+  url: string;
+  serviceRoleKey: string;
+  baseUrl: string;
+  withAdmin?: boolean;
+}) {
   const supabase = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
   await deleteSeedUsers(supabase);
 
@@ -140,6 +158,8 @@ export async function runSeed({ url, serviceRoleKey, baseUrl }: { url: string; s
       for (const result of await Promise.all(inserts)) check(result);
     }),
   );
+
+  if (withAdmin) await createUser(supabase, SEED_ADMIN.email, SEED_ADMIN.fullName, "candidate", SEED_ADMIN.id);
 
   const jobIds = new Map<string, string>();
   const jobCompany = new Map<string, string>();
@@ -246,6 +266,17 @@ export async function runSeed({ url, serviceRoleKey, baseUrl }: { url: string; s
   const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
   const matchCount = (key: string) => matches.filter((m) => m.candidateKey === key).length;
   return Promise.all([
+    ...(withAdmin
+      ? [
+          (async () => ({
+            portal: "admin" as const,
+            email: SEED_ADMIN.email,
+            fullName: SEED_ADMIN.fullName,
+            detail: "can approve or reject companies at /admin",
+            signInUrl: await signInUrl(supabase, baseUrl, SEED_ADMIN.email, "admin"),
+          }))(),
+        ]
+      : []),
     ...CANDIDATES.map(async (c) => ({
       portal: "candidate" as const,
       email: c.email,

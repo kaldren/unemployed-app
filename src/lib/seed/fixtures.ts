@@ -53,6 +53,22 @@ export type SeedCompany = {
   jobs: SeedJob[];
 };
 
+// Listed in ADMIN_USER_IDS by scripts/db.mts for the local database, so it can open /admin. A fixed id,
+// so the env can name it before the user exists.
+export const SEED_ADMIN = {
+  id: "00000000-0000-4000-8000-5eed0000ad01",
+  email: `admin@${SEED_DOMAIN}`,
+  fullName: "Seed Admin",
+};
+
+// Whether ADMIN_USER_IDS (comma-separated, as isAdmin in lib/auth reads it) lists SEED_ADMIN.
+export function listsSeedAdmin(adminUserIds = process.env.ADMIN_USER_IDS ?? "") {
+  return adminUserIds
+    .split(",")
+    .map((id) => id.trim())
+    .includes(SEED_ADMIN.id);
+}
+
 const candidate = (c: Omit<SeedCandidate, "email">): SeedCandidate => ({ ...c, email: `${c.key}@${SEED_DOMAIN}` });
 
 export const CANDIDATES: SeedCandidate[] = [

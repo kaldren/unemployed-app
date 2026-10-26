@@ -1,11 +1,11 @@
 // Wipes and recreates the dummy candidates, companies and jobs, then prints a sign-in link for each account.
 // Runs before every `pnpm dev`; run `pnpm seed` alone for fresh links. Links work once and expire after an hour.
-// Seed rows live under *.seed.test; real accounts are never touched. Needs SUPABASE_SERVICE_ROLE_KEY in .env.local.
+// Seed rows live under *.seed.test; real accounts are never touched. Seeds whichever database `pnpm db:use` picked.
 // `--soft` (used by `pnpm dev`) reports a failure but exits 0, so the app still starts.
-import { existsSync, writeFileSync } from "node:fs";
+import "./load-env.mts";
+import { writeFileSync } from "node:fs";
+import { listsSeedAdmin } from "../src/lib/seed/fixtures.ts";
 import { runSeed, type SeedAccount } from "../src/lib/seed/run.ts";
-
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 const soft = process.argv.includes("--soft");
 const REPORT_FILE = ".seed-accounts.md";
@@ -23,7 +23,7 @@ const baseUrl = `http://localhost:${process.env.PORT ?? 3000}`;
 const started = Date.now();
 let accounts: SeedAccount[];
 try {
-  accounts = await runSeed({ url, serviceRoleKey, baseUrl });
+  accounts = await runSeed({ url, serviceRoleKey, baseUrl, withAdmin: listsSeedAdmin() });
 } catch (error) {
   fail(error instanceof Error ? error.message : JSON.stringify(error));
 }
@@ -42,6 +42,7 @@ const report = [
   "Each link signs in once and expires in an hour; `pnpm seed` makes new ones.",
   "Use a separate browser profile or private window per account.",
   "",
+  ...(accounts.some((a) => a.portal === "admin") ? section("admin", "Admin") : []),
   ...section("candidate", "Candidates"),
   ...section("employer", "Employers"),
 ].join("\n");
