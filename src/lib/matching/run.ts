@@ -2,7 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { getCandidateProfile, type CandidateProfileData } from "@/lib/candidate/queries";
 import { isAiConfigured } from "@/lib/jobs/draft";
-import { buildMatchPrompt, matchInputHash, type MatchCandidate } from "./prompt";
+import { buildMatchPrompt, matchInputHash, skillCoverage, type MatchCandidate } from "./prompt";
 import {
   findPairsToScore,
   getJobsToScore,
@@ -71,14 +71,14 @@ async function matchAround(target: Target) {
     const prompt = buildMatchPrompt(job, candidate);
     const inputHash = matchInputHash(model, prompt);
     if (hashes.get(pairKey(jobId, candidateId)) === inputHash) return [];
-    return [{ jobId, candidateId, prompt, inputHash }];
+    return [{ jobId, candidateId, prompt, inputHash, jobSkills: job.skills }];
   });
 
   let failed = 0;
-  await inPool(toScore, CONCURRENT_CALLS, async ({ prompt, ...pair }) => {
+  await inPool(toScore, CONCURRENT_CALLS, async ({ prompt, jobSkills, ...pair }) => {
     try {
-      const score = await scoreMatch(prompt);
-      await saveMatchScore({ ...pair, ...score, model });
+      const { matchedSkills, ...score } = await scoreMatch(prompt);
+      await saveMatchScore({ ...pair, ...score, ...skillCoverage(jobSkills, matchedSkills), model });
     } catch (error) {
       // The pair stays unscored (or keeps its old score) and is tried again on the next run.
       failed++;

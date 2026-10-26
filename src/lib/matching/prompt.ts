@@ -10,13 +10,16 @@ import {
 } from "@/lib/candidate/schemas";
 import type { RoleType } from "@/lib/jobs/schemas";
 
-// Pairs scoring this or more reach both decks.
-export const MATCH_THRESHOLD = 70;
+// Pairs where the candidate has more than this share (%) of the job's skills reach both decks.
+export const SKILL_COVERAGE_THRESHOLD = 75;
 
 const REASON_MAX = 400;
 
 export const matchScoreSchema = z.object({
   score: z.int().describe("0-100: how well the candidate fits the role"),
+  matchedSkills: z
+    .array(z.string())
+    .describe("The job's skills the candidate has or has an equivalent of, copied exactly from the job's list"),
   candidateReason: z.string().describe("To the candidate, in second person"),
   employerReason: z.string().describe("To the employer, about the candidate in third person"),
 });
@@ -33,6 +36,9 @@ Score how well the candidate fits the job from 0 to 100:
 Judge the core requirements (main skills, level, kind of work) more than the nice-to-haves, and evidence
 (experience, years, level) more than listed skills. Seniority one step off is a small gap; more is a large one.
 Ignore anything that says who the person is (age, gender, origin, names); judge only the work.
+"matchedSkills": each of the job's skills the candidate has, judged from their skills, experience and about,
+not by exact name: an equivalent or a clear superset counts (e.g. "Postgres" for "PostgreSQL", "ASP.NET Core"
+for ".NET"). Copy each name exactly as the job lists it.
 "candidateReason": one or two sentences to the candidate ("Your five years of ...").
 "employerReason": one or two sentences to the employer about the candidate ("Five years of ...").
 Both name the strongest fit and, below 85, the main gap. Plain words, no scores, no flattery.`;
@@ -147,7 +153,16 @@ export function clampScore(result: MatchScore): MatchScore {
   const reason = (text: string) => text.trim().slice(0, REASON_MAX).trimEnd();
   return {
     score: Math.max(0, Math.min(100, Math.round(result.score))),
+    matchedSkills: result.matchedSkills,
     candidateReason: reason(result.candidateReason),
     employerReason: reason(result.employerReason),
   };
+}
+
+// Keeps only real job skills from the AI's list (once each, in the job's order) and the share they cover.
+export function skillCoverage(jobSkills: string[], matched: string[]) {
+  const wanted = new Set(matched.map((name) => name.trim().toLowerCase()));
+  const matchedSkills = [...new Set(jobSkills)].filter((name) => wanted.has(name.toLowerCase()));
+  const total = new Set(jobSkills).size;
+  return { matchedSkills, skillCoverage: total ? Math.round((100 * matchedSkills.length) / total) : 0 };
 }

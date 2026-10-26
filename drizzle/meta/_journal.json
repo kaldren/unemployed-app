@@ -64,6 +64,13 @@
       "when": 1792911158064,
       "tag": "0008_ai_matches",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793042123705,
+      "tag": "0009_skill_coverage",
+      "breakpoints": true
     }
   ]
 }

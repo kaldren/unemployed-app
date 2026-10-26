@@ -1,5 +1,5 @@
 import "server-only";
-import { aliasedTable, and, asc, desc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
+import { aliasedTable, and, asc, desc, eq, gt, inArray, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import {
@@ -18,7 +18,7 @@ import {
   skills,
 } from "@/db/schema";
 import { MIN_SKILLS } from "@/lib/candidate/completeness";
-import { MATCH_THRESHOLD } from "./prompt";
+import { SKILL_COVERAGE_THRESHOLD } from "./prompt";
 
 // Cards loaded per page of the deck; the deck refreshes for more when it runs out.
 export const DECK_SIZE = 10;
@@ -87,11 +87,11 @@ const pairFits = sql`(
   and (cardinality(${candidateProfiles.employmentTypes}) = 0 or ${jobs.employmentType} = any(${candidateProfiles.employmentTypes}))
 )`;
 
-// The AI scored the pair high enough for both sides to see it.
+// The AI found enough of the job's skills in the profile for both sides to see the pair.
 const isAiMatch = and(
   eq(jobMatches.jobId, jobs.id),
   eq(jobMatches.candidateId, candidateProfiles.profileId),
-  gte(jobMatches.score, MATCH_THRESHOLD),
+  gt(jobMatches.skillCoverage, SKILL_COVERAGE_THRESHOLD),
 )!;
 
 // When both sides had liked: the later of the two swipes.
@@ -402,13 +402,13 @@ export async function getScoredHashes(jobIds: string[], candidateIds: string[]) 
 export const pairKey = (jobId: string, candidateId: string) => `${jobId}:${candidateId}`;
 
 export async function saveMatchScore(values: typeof jobMatches.$inferInsert) {
-  const { score, candidateReason, employerReason, model, inputHash } = values;
+  const { score, matchedSkills, skillCoverage, candidateReason, employerReason, model, inputHash } = values;
   await db
     .insert(jobMatches)
     .values(values)
     .onConflictDoUpdate({
       target: [jobMatches.jobId, jobMatches.candidateId],
-      set: { score, candidateReason, employerReason, model, inputHash, scoredAt: new Date() },
+      set: { score, matchedSkills, skillCoverage, candidateReason, employerReason, model, inputHash, scoredAt: new Date() },
     });
 }
 
