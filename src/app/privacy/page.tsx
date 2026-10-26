@@ -72,7 +72,7 @@ export default function PrivacyPage() {
       <h2>Service providers</h2>
       <p>
         We use these providers to run the service. They process data only on our instructions: Supabase (database,
-        sign-in and file storage, EU region), Vercel (hosting) and Anthropic (AI). Some may process data outside
+        sign-in and file storage, EU region), Vercel (hosting), Anthropic (AI) and Resend (email). Some may process data outside
         the EU under the European Commission&apos;s standard contractual clauses.
       </p>
 
