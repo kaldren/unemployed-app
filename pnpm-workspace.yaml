@@ -3,5 +3,3 @@ allowBuilds:
   unrs-resolver: false
   esbuild: false
   free-email-domains: false
-patchedDependencies:
-  postgres@3.4.9: patches/postgres@3.4.9.patch
