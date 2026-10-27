@@ -28,6 +28,8 @@ export function PasswordForm({ next, disabled = false }: { next?: string; disabl
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [signIn, signInAction, signingIn] = useActionState(signInWithPassword, IDLE);
   const [signUp, signUpAction, signingUp] = useActionState(signUpWithPassword, IDLE);
   const [reset, resetAction, resetting] = useActionState(requestPasswordReset, IDLE);
@@ -73,10 +75,39 @@ export function PasswordForm({ next, disabled = false }: { next?: string; disabl
   }
 
   const error = state.status === "error" && !pending ? state.message : null;
-  const ready = email.trim() && (mode === "reset" || password);
+  const ready =
+    email.trim() && (mode === "reset" || password) && (mode !== "signup" || (firstName.trim() && lastName.trim()));
   return (
     <form action={action} className="flex flex-col gap-4 text-left" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
+      {mode === "signup" && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="firstName">First name</Label>
+            <Input
+              id="firstName"
+              name="firstName"
+              autoComplete="given-name"
+              required
+              maxLength={50}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lastName">Last name</Label>
+            <Input
+              id="lastName"
+              name="lastName"
+              autoComplete="family-name"
+              required
+              maxLength={50}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">Email</Label>
         <Input

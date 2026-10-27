@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { emailSchema } from "@/lib/employer/company";
+import { joinName, nameSchema } from "@/lib/name";
 import { newPasswordSchema } from "@/lib/password";
 import { AUTH_ERRORS, PASSWORD_PATH, safeNextPath } from "@/lib/portal";
 import { ensureProfile } from "@/lib/profile";
@@ -22,6 +23,7 @@ const credentials = z.object({
 });
 
 const newCredentials = credentials.extend({
+  ...nameSchema.shape,
   password: newPasswordSchema,
 });
 
@@ -32,6 +34,8 @@ function parse<S extends z.ZodType>(schema: S, formData: FormData) {
     email: formData.get("email") ?? "",
     password: formData.get("password") ?? "",
     next: formData.get("next"),
+    firstName: formData.get("firstName") ?? "",
+    lastName: formData.get("lastName") ?? "",
   });
 }
 
@@ -78,12 +82,20 @@ export async function signInWithPassword(_prev: PasswordAuthState, formData: For
 export async function signUpWithPassword(_prev: PasswordAuthState, formData: FormData): Promise<PasswordAuthState> {
   const parsed = parse(newCredentials, formData);
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]!.message };
-  const { email, password, next } = parsed.data;
+  const { email, password, next, firstName, lastName } = parsed.data;
 
   const emailRedirectTo = await callbackUrl(safeNextPath(next));
   if (!emailRedirectTo) return { status: "error", message: AUTH_ERRORS.failed };
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo,
+      // Read by ensureProfile when the confirmation link creates the profile.
+      data: { first_name: firstName, last_name: lastName, full_name: joinName({ firstName, lastName }) },
+    },
+  });
   if (error) {
     if (error.status === 429) return { status: "error", message: TOO_MANY };
     if (error.code === "weak_password") return { status: "error", message: "Choose a stronger password." };

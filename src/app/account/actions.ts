@@ -7,7 +7,9 @@ import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { deleteUser } from "@/lib/account";
 import { getCurrentUser, getMembership, getSessionUserId } from "@/lib/auth";
+import { parseFormJson, toActionError, type ActionState } from "@/lib/candidate/schemas";
 import { isCandidateComplete } from "@/lib/matching/queries";
+import { joinName, nameSchema } from "@/lib/name";
 import { HOME_PATH, LOGIN_PATH, NEW_COMPANY_PATH, parseView } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,6 +28,21 @@ export async function openView(formData: FormData) {
   revalidatePath("/", "layout");
   if (view === "employer") redirect((await getMembership(userId)) ? HOME_PATH.employer : NEW_COMPANY_PATH);
   redirect((await isCandidateComplete(userId)) ? HOME_PATH.candidate : "/profile");
+}
+
+// Saves the user's first and last name, from /welcome or settings. full_name follows them.
+export async function saveName(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  const parsed = parseFormJson(nameSchema, formData);
+  if (!parsed) return { status: "error", message: "Something went wrong. Please try again." };
+  if (!parsed.success) return toActionError(parsed.error);
+  await db
+    .update(profiles)
+    .set({ ...parsed.data, fullName: joinName(parsed.data) })
+    .where(eq(profiles.id, user.id));
+  // The name shows in the header on every page.
+  revalidatePath("/", "layout");
+  return { status: "saved", at: Date.now() };
 }
 
 // Deletes the signed-in user's account and everything in it, then signs them out to the home page.

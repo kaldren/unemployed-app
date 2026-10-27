@@ -12,6 +12,7 @@ import { getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
 import { getJobDeck, getSwipeActivity } from "@/lib/matching/queries";
 import { refreshMatches } from "@/lib/matching/run";
+import { firstNameOf } from "@/lib/name";
 import { HOME_PATH, MATCHES_PATH, WELCOME_PATH } from "@/lib/portal";
 import { swipeJob } from "./actions";
 import { Landing } from "./landing";
@@ -39,7 +40,7 @@ async function Jobs() {
   ]);
   if (getMissingItems(profile).length > 0) redirect("/profile");
   refreshMatches({ candidateId: user.id });
-  const firstName = user.fullName?.trim().split(/\s+/)[0];
+  const firstName = firstNameOf(user);
 
   return (
     <>

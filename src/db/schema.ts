@@ -33,6 +33,9 @@ export const profiles = pgTable(
       .primaryKey()
       .references(() => authUsers.id, { onDelete: "cascade" }),
     defaultView: appView("default_view"),
+    // Asked at sign-up (Google gives them too). `full_name` is kept as "First Last" for display and matching.
+    firstName: text("first_name"),
+    lastName: text("last_name"),
     fullName: text("full_name"),
     email: text().notNull(),
     avatarUrl: text("avatar_url"),
