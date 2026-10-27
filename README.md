@@ -63,7 +63,7 @@ up locally; use the seed links.
 
 ## Employer sign-in setup (hosted)
 
-Local dev needs none of this (email/password works; Mailpit at http://127.0.0.1:55324 catches auth email).
+Local dev needs none of this: every email (Supabase auth emails and the app's own, e.g. domain verification and invites) lands in Mailpit at http://127.0.0.1:55324. Google sign-in isn't configured locally.
 
 1. **Google Cloud** → APIs & Services → Credentials → OAuth client ID (Web). Authorized redirect URI:
    `https://<project-ref>.supabase.co/auth/v1/callback`. Consent screen: app name, support email, your domain.

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { EMPLOYER_COMPANY, EMPLOYER_DOMAIN, membership, openEmployerMagicLink, OWNER, resetEmployers, TEAMMATE } from "./support/employer";
+import { clearInbox, latestLink } from "./support/mailpit";
 import { admin, hasServiceRoleKey } from "./support/test-user";
 
 test.skip(!hasServiceRoleKey, "Set SUPABASE_SERVICE_ROLE_KEY in .env.local to run signed-in tests");
@@ -17,7 +18,7 @@ async function companyId(userId: string) {
   return data.company_id as string;
 }
 
-// The link in the verification email, minted here since local email isn't delivered.
+// A verification link minted here, for a state the UI can't reach (another company verifying first).
 async function verificationLink(requestedBy: string) {
   const token = randomBytes(32).toString("base64url");
   const { error } = await admin()
@@ -74,11 +75,14 @@ test("a new employer creates a company and verifies its domain before publishing
   await fill(page, `Email on ${EMPLOYER_DOMAIN}`, "someone@other.com");
   await verify.getByRole("button", { name: "Send verification link" }).click();
   await expect(verify.getByText(`Use an address ending in @${EMPLOYER_DOMAIN}`)).toBeVisible();
+  await clearInbox(OWNER.email);
   await fill(page, `Email on ${EMPLOYER_DOMAIN}`, OWNER.email);
   await verify.getByRole("button", { name: "Send verification link" }).click();
   await expect(verify.getByText(`We sent a link to ${OWNER.email}`)).toBeVisible();
 
-  const link = await verificationLink(ownerId!);
+  // The real email, caught by Mailpit. Its links point at NEXT_PUBLIC_SITE_URL, so keep only the path.
+  const emailed = new URL(await latestLink(OWNER.email, /href="([^"]*\/auth\/verify-domain[^"]*)"/));
+  const link = (emailed.pathname + emailed.search).replaceAll("&amp;", "&");
   await page.goto(link);
   await expect(page).toHaveURL("/employers/company?verify=verified");
   await expect(page.getByRole("alert").filter({ hasText: "Domain verified" })).toBeVisible();
@@ -117,9 +121,11 @@ test("owners invite teammates, who join and get their role changed or removed", 
   await expect(page.getByText("Saved")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Example Inc" })).toBeVisible();
 
+  await clearInbox(TEAMMATE.email);
   await fill(page, "Invite by email", TEAMMATE.email.toUpperCase());
   await page.getByRole("button", { name: "Send invite" }).click();
   await expect(page.getByText("Invite sent")).toBeVisible();
+  expect(await latestLink(TEAMMATE.email, /href="([^"]*\/employers\/login[^"]*)"/)).toContain("next=/employers/company/new");
   const invites = page.getByRole("list", { name: "Pending invites" });
   await expect(invites.getByText(TEAMMATE.email)).toBeVisible();
   await expect(invites.getByText("Recruiter")).toBeVisible();
