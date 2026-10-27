@@ -46,9 +46,9 @@ function switchToLocal() {
     "NEXT_PUBLIC_SITE_URL=http://localhost:3000",
     "# The seeded admin (see the seed report) can open /admin.",
     `ADMIN_USER_IDS=${SEED_ADMIN.id}`,
-    "# No real mail from local data. Auth emails (magic links) land in Mailpit:",
-    `# ${status.MAILPIT_URL ?? status.INBUCKET_URL}`,
+    "# No real mail from local data. Auth emails and the app's own emails land in Mailpit (open it to read them).",
     "RESEND_API_KEY=",
+    `MAILPIT_URL=${status.MAILPIT_URL ?? status.INBUCKET_URL}`,
     "",
   ].join("\n");
   // Rewriting an unchanged file would make a running `next dev` reload its env.

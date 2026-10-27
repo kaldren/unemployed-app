@@ -18,7 +18,7 @@ test("an admin approves a company, and its employer is told it's verified", asyn
   const employer = await (await browser.newContext()).newPage();
   await openEmployerMagicLink(employer, OWNER.email);
   await expect(employer).toHaveURL("/employers");
-  await expect(employer.getByText("We're verifying your company.", { exact: false })).toBeVisible();
+  await expect(employer.getByText("We're reviewing your company.", { exact: false })).toBeVisible();
 
   const adminContext = await browser.newContext();
   await signIn(adminContext, { user: E2E_ADMIN });
@@ -31,7 +31,7 @@ test("an admin approves a company, and its employer is told it's verified", asyn
 
   expect(await membership(ownerId!)).toMatchObject({ companies: { status: "approved" } });
   await employer.reload();
-  await expect(employer.getByText("We're verifying your company.", { exact: false })).toBeHidden();
+  await expect(employer.getByText("We're reviewing your company.", { exact: false })).toBeHidden();
 
   // Rejecting tells the employer too.
   await supabase().from("companies").update({ status: "pending" }).eq("domain", EMPLOYER_DOMAIN);

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedCompleteCandidate } from "./support/candidate";
-import { EMPLOYER_DOMAIN, membership, openEmployerMagicLink, OWNER, resetEmployers, TEAMMATE } from "./support/employer";
+import { addTeammate, EMPLOYER_DOMAIN, membership, openEmployerMagicLink, OWNER, resetEmployers } from "./support/employer";
 import { admin, hasServiceRoleKey, signIn } from "./support/test-user";
 
 test("visitors see the landing page, with ways in and the legal pages", async ({ page }) => {
@@ -69,14 +69,9 @@ test.describe("deleting an account", () => {
     expect(count).toBe(0);
   });
 
-  test("when the owner leaves, the company stays and a teammate becomes owner", async ({ page, context }) => {
-    const [, teammateId] = await resetEmployers();
-    await openEmployerMagicLink(page, OWNER.email);
-    await expect(page).toHaveURL("/employers");
-    await context.clearCookies();
-    await openEmployerMagicLink(page, TEAMMATE.email);
-    await expect(page).toHaveURL("/employers");
-    await context.clearCookies();
+  test("when the owner leaves, the company stays and a teammate becomes owner", async ({ page }) => {
+    await resetEmployers();
+    const teammateId = await addTeammate();
     await openEmployerMagicLink(page, OWNER.email);
     await expect(page).toHaveURL("/employers");
 

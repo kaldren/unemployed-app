@@ -1,19 +1,19 @@
 import type { EmailOtpType, User } from "@supabase/supabase-js";
-import { eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/db";
-import { companies, companyMembers, profiles } from "@/db/schema";
+import { profiles } from "@/db/schema";
 import { safeNextPath } from "@/lib/auth";
-import { vetCompanySoon } from "@/lib/employer/vetting";
-import { companyNameFromDomain, emailDomain, isWorkEmail } from "@/lib/employer/work-email";
+import { ensureEmployerProfile, profileValues } from "@/lib/employer/profile";
 import { HOME_PATH, LOGIN_PATH, parsePortal, type AuthError, type Portal } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
-// New users may get the "Confirm signup" email, whose link carries `type=signup`.
-const EMAIL_OTP_TYPES: EmailOtpType[] = ["email", "magiclink", "signup"];
+// Email links: sign-in, "Confirm signup" (`signup`) and "Reset password" (`recovery`, with `next` set to
+// the new-password page by the reset request).
+const EMAIL_OTP_TYPES: EmailOtpType[] = ["email", "magiclink", "signup", "recovery"];
 
-// Google (via Supabase) and magic links land here. Google sends a one-time `code` (or an error if the
-// user cancelled); magic links send a `code` too, or a `token_hash` when the email template links here directly.
+// Google (via Supabase), magic links, sign-up confirmations and password resets land here. Google sends a
+// one-time `code` (or an error if the user cancelled); email links send a `code` too, or a `token_hash` when
+// the email template links here directly.
 // `portal` says which sign-in page the user came from.
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   let result: AuthError | null;
   try {
-    result = portal === "employer" ? await createEmployer(user) : await createCandidateProfile(user);
+    result = portal === "employer" ? await ensureEmployerProfile(user) : await createCandidateProfile(user);
   } catch (err) {
     console.error("Failed to create profile", err);
     result = "failed";
@@ -53,57 +53,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.redirect(new URL(next, request.url));
 }
 
-function requireEmail(user: User): string {
-  if (!user.email) throw new Error(`User ${user.id} has no email`);
-  return user.email;
-}
-
-function profileValues(user: User, type: Portal) {
-  const meta = user.user_metadata;
-  return {
-    id: user.id,
-    type,
-    email: requireEmail(user),
-    fullName: meta.full_name ?? meta.name ?? null,
-    avatarUrl: meta.avatar_url ?? meta.picture ?? null,
-  };
-}
-
 // First sign-in creates the profile; later sign-ins leave it as is.
 async function createCandidateProfile(user: User): Promise<null> {
   await db.insert(profiles).values(profileValues(user, "candidate")).onConflictDoNothing({ target: profiles.id });
-  return null;
-}
-
-// First sign-in creates the employer profile and joins the company for the email's domain,
-// creating the company (as its owner) if this is the first person from that domain. A new company is vetted by AI.
-async function createEmployer(user: User): Promise<AuthError | null> {
-  const email = requireEmail(user);
-  const [existing] = await db.select({ type: profiles.type }).from(profiles).where(eq(profiles.id, user.id));
-  if (existing) return existing.type === "employer" ? null : "candidate_account";
-  if (!isWorkEmail(email)) return "personal_email";
-
-  const domain = emailDomain(email);
-  const createdCompanyId = await db.transaction(async (tx) => {
-    // The same link opened twice at once: the second request waits here, then finds the profile made.
-    const [inserted] = await tx
-      .insert(profiles)
-      .values(profileValues(user, "employer"))
-      .onConflictDoNothing({ target: profiles.id })
-      .returning({ id: profiles.id });
-    if (!inserted) return null;
-    const [created] = await tx
-      .insert(companies)
-      .values({ domain, name: companyNameFromDomain(domain) })
-      .onConflictDoNothing({ target: companies.domain })
-      .returning({ id: companies.id });
-    const companyId =
-      created?.id ??
-      (await tx.select({ id: companies.id }).from(companies).where(eq(companies.domain, domain)))[0]!.id;
-    await tx.insert(companyMembers).values({ profileId: user.id, companyId, role: created ? "owner" : "member" });
-    return created?.id ?? null;
-  });
-  if (createdCompanyId) vetCompanySoon(createdCompanyId, domain);
   return null;
 }
 

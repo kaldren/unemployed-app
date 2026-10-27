@@ -1,5 +1,5 @@
 import "server-only";
-import { aliasedTable, and, asc, desc, eq, gt, inArray, sql, type SQL } from "drizzle-orm";
+import { aliasedTable, and, asc, desc, eq, gt, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import {
@@ -25,8 +25,8 @@ import { SKILL_COVERAGE_THRESHOLD } from "./prompt";
 // Cards loaded per page of the deck; the deck refreshes for more when it runs out.
 export const DECK_SIZE = 10;
 
-// Published, from a verified company.
-const jobIsLive = and(eq(jobs.status, "open"), eq(companies.status, "approved"))!;
+// Published, from a company that verified its domain and passed vetting (canHire in lib/auth).
+const jobIsLive = and(eq(jobs.status, "open"), eq(companies.status, "approved"), isNotNull(companies.verifiedAt))!;
 
 // Seeded dummy data (lib/seed) and real accounts never see each other.
 const isSeedDomain = (domain: SQL | AnyPgColumn | string) =>

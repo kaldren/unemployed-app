@@ -173,6 +173,7 @@ export async function runSeed({
             domain: company.domain,
             name: company.name,
             status: company.status,
+            verified_at: vettedAt,
             vetting_reason: company.vettingReason,
             vetting_model: "seed",
             vetted_at: vettedAt,

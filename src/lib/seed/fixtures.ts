@@ -42,7 +42,7 @@ export type SeedJob = {
   status: "draft" | "open" | "closed";
 };
 
-export type SeedEmployer = { email: string; fullName: string; role: "owner" | "member" };
+export type SeedEmployer = { email: string; fullName: string; role: "owner" | "admin" | "recruiter" };
 
 export type SeedCompany = {
   domain: string;
@@ -316,7 +316,7 @@ export const COMPANIES: SeedCompany[] = [
     name: "Northwind Labs",
     status: "approved",
     vettingReason: "Seeded: an established software consultancy.",
-    employers: [employer("Olivia Hart", NORTHWIND), employer("Sam Reed", NORTHWIND, "member")],
+    employers: [employer("Olivia Hart", NORTHWIND), employer("Sam Reed", NORTHWIND, "recruiter")],
     jobs: [
       {
         key: "northwind-backend",

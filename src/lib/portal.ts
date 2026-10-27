@@ -3,6 +3,8 @@ export type Portal = "candidate" | "employer";
 
 export const LOGIN_PATH = { candidate: "/login", employer: "/employers/login" } as const;
 export const HOME_PATH = { candidate: "/", employer: "/employers" } as const;
+export const NEW_COMPANY_PATH = "/employers/company/new";
+export const COMPANY_PATH = "/employers/company";
 export const MATCHES_PATH = { candidate: "/matches", employer: "/employers/matches" } as const;
 
 export function parsePortal(value: string | null | undefined): Portal {
@@ -14,8 +16,7 @@ export const AUTH_ERRORS = {
   cancelled: "Sign-in was cancelled. Try again when you're ready.",
   failed: "Something went wrong while signing you in. Please try again.",
   session: "Your session has ended. Please sign in again.",
-  personal_email: "Use your work email. Personal addresses like Gmail can't sign in as a company.",
-  candidate_account: "This email already has a candidate account. Use a different work email.",
+  candidate_account: "This email already has a candidate account. Use a different email to hire.",
 } as const;
 
 export type AuthError = keyof typeof AUTH_ERRORS;

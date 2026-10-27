@@ -12,9 +12,11 @@ import {
   smallint,
   text,
   timestamp,
+  unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole, authUsers } from "drizzle-orm/supabase";
+import { anonRole, authenticatedRole, authUsers } from "drizzle-orm/supabase";
 
 export const profileType = pgEnum("profile_type", ["candidate", "employer"]);
 
@@ -281,18 +283,30 @@ export const candidateRoles = pgTable(
 
 // ---------- Companies ----------
 
-// `pending` until vetted; jobs go live only when `approved`.
+// `pending` until vetted by AI (or an admin); candidates see jobs only from `approved`, verified companies.
 export const companyStatus = pgEnum("company_status", ["pending", "approved", "needs_review", "rejected"]);
-export const companyRole = pgEnum("company_role", ["owner", "member"]);
+export const companyRole = pgEnum("company_role", ["owner", "admin", "recruiter"]);
+export type CompanyRole = (typeof companyRole.enumValues)[number];
 
-// The email domain is the company: the first employer from a domain creates it.
-// Written only by the server (Drizzle). RLS lets members read their own company.
+// Policy helpers, defined in drizzle/0015 as security definer functions in the unexposed `private`
+// schema, so company_members policies can read company_members without recursing.
+const hasCompanyRole = (companyId: SQL, roles: CompanyRole[]) =>
+  sql`private.has_company_role(${companyId}, ${sql.raw(`'{${roles.join(",")}}'`)}::public.company_role[])`;
+const isCompanyAdmin = (companyId: SQL) => hasCompanyRole(companyId, ["owner", "admin"]);
+
+// A signed-in employer creates a company and becomes its owner. It's unverified until a member
+// confirms an email on its domain (company_domain_verifications); only verified companies publish jobs.
+// Written only by the server (Drizzle); RLS is the safety net. Profiles are public.
 export const companies = pgTable(
   "companies",
   {
     id: uuid().primaryKey().defaultRandom(),
-    domain: text().notNull().unique(), // lowercase, e.g. "acme.com"
+    domain: text().notNull(), // lowercase, e.g. "acme.com"
     name: text().notNull(),
+    website: text(),
+    logoUrl: text("logo_url"),
+    description: text(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
     status: companyStatus().notNull().default("pending"),
     // What the AI vetting said, kept so an admin can see why. Null until vetted.
     vettingReason: text("vetting_reason"),
@@ -302,38 +316,122 @@ export const companies = pgTable(
   },
   (t) => [
     check("domain_lowercase", sql`${t.domain} = lower(${t.domain})`),
-    pgPolicy("Members can read their company", {
+    // Anyone may claim a domain, but only one company can prove it.
+    uniqueIndex("companies_verified_domain_unique").on(t.domain).where(sql`${t.verifiedAt} is not null`),
+    pgPolicy("Company profiles are public", {
       for: "select",
+      to: [anonRole, authenticatedRole],
+      using: sql`true`,
+    }),
+    pgPolicy("Owners and admins can update their company", {
+      for: "update",
       to: authenticatedRole,
-      using: sql`exists (select 1 from company_members m where m.company_id = ${t.id} and m.profile_id = (select auth.uid()))`,
+      using: isCompanyAdmin(sql`${t.id}`),
+      withCheck: isCompanyAdmin(sql`${t.id}`),
+    }),
+    pgPolicy("Owners can delete their company", {
+      for: "delete",
+      to: authenticatedRole,
+      using: hasCompanyRole(sql`${t.id}`, ["owner"]),
     }),
   ],
 ).enableRLS();
 
-// An employer belongs to exactly one company: the one for their email domain.
+// One row per (company, user). Each company has exactly one owner, set when it's created.
 export const companyMembers = pgTable(
   "company_members",
   {
-    profileId: profileId().primaryKey(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, { onDelete: "cascade" }),
+    profileId: profileId(),
     role: companyRole().notNull(),
     createdAt: createdAt(),
   },
   (t) => [
-    index("company_members_company_id_idx").on(t.companyId),
-    pgPolicy("Employers can read their own membership", {
+    primaryKey({ columns: [t.companyId, t.profileId] }),
+    index("company_members_profile_id_idx").on(t.profileId),
+    pgPolicy("Members can read their teammates", {
       for: "select",
       to: authenticatedRole,
-      using: ownsRow,
+      using: hasCompanyRole(sql`${t.companyId}`, ["owner", "admin", "recruiter"]),
+    }),
+    // Owners and admins manage everyone but the owner, and can't make anyone owner.
+    pgPolicy("Owners and admins can add members", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${isCompanyAdmin(sql`${t.companyId}`)} and ${t.role} <> 'owner'`,
+    }),
+    pgPolicy("Owners and admins can change roles", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`${isCompanyAdmin(sql`${t.companyId}`)} and ${t.role} <> 'owner'`,
+      withCheck: sql`${isCompanyAdmin(sql`${t.companyId}`)} and ${t.role} <> 'owner'`,
+    }),
+    pgPolicy("Owners and admins can remove members", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`${isCompanyAdmin(sql`${t.companyId}`)} and ${t.role} <> 'owner'`,
     }),
   ],
 ).enableRLS();
 
+// A pending invitation by email. The invitee accepts it once signed in with that (confirmed) email.
+export const companyInvites = pgTable(
+  "company_invites",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    email: text().notNull(),
+    role: companyRole().notNull(),
+    invitedBy: uuid("invited_by").references(() => profiles.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("company_invites_company_email_unique").on(t.companyId, t.email),
+    index("company_invites_email_idx").on(t.email),
+    check("company_invite_email_lowercase", sql`${t.email} = lower(${t.email})`),
+    check("company_invite_not_owner", sql`${t.role} <> 'owner'`),
+    pgPolicy("Owners and admins manage invites", {
+      for: "all",
+      to: authenticatedRole,
+      using: isCompanyAdmin(sql`${t.companyId}`),
+      withCheck: isCompanyAdmin(sql`${t.companyId}`),
+    }),
+    pgPolicy("Invitees can read their invites", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${t.email} = lower((select auth.jwt() ->> 'email'))`,
+    }),
+  ],
+).enableRLS();
+
+// A one-time link sent to an address on the company's domain. Only its SHA-256 hash is stored.
+// Server-only: RLS on with no policies.
+export const companyDomainVerifications = pgTable(
+  "company_domain_verifications",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    email: text().notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    requestedBy: uuid("requested_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("company_domain_verifications_company_id_idx").on(t.companyId)],
+).enableRLS();
+
 // ---------- Jobs ----------
 
-// Jobs start as drafts. Publishing (and going live once the company is approved) comes later.
+// Jobs start as drafts. Publishing needs a verified company (trigger in drizzle/0015); candidates see
+// open jobs of verified, approved companies.
 export const jobStatus = pgEnum("job_status", ["draft", "open", "closed"]);
 
 const isCompanyMember = (companyId: SQL) =>

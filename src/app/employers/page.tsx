@@ -12,6 +12,7 @@ import { vetCompanySoon } from "@/lib/employer/vetting";
 import { roleTypeLabel } from "@/lib/jobs/labels";
 import { listJobs } from "@/lib/jobs/queries";
 import { JOB_STATUS } from "@/lib/jobs/schemas";
+import { COMPANY_PATH } from "@/lib/portal";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -31,8 +32,8 @@ export default function EmployerHome() {
 async function Jobs() {
   const user = await requireEmployer();
   const jobs = await listJobs(user.company.id);
-  // Catches companies whose vetting never ran (made before vetting existed, or the run was lost).
-  if (user.company.status === "pending") vetCompanySoon(user.company.id, user.company.domain);
+  // Catches verified companies whose vetting never ran (made before vetting existed, or the run was lost).
+  if (user.company.status === "pending" && user.company.verifiedAt) vetCompanySoon(user.company.id, user.company.domain);
 
   return (
     <>
@@ -47,7 +48,7 @@ async function Jobs() {
               <p className="text-base text-muted-foreground">
                 Hiring for <span className="font-medium text-foreground">{user.company.name}</span>
               </p>
-              <VerificationNote status={user.company.status} />
+              <VerificationNote company={user.company} />
             </div>
             {jobs.length > 0 && (
               <Button asChild>
@@ -98,10 +99,20 @@ async function Jobs() {
   );
 }
 
-// Candidates see a company's jobs only once it's approved, so say why they can't yet.
-function VerificationNote({ status }: { status: CurrentEmployer["company"]["status"] }) {
-  if (status === "approved") return null;
-  if (status === "rejected") {
+// Candidates see a company's jobs once it has verified its domain and passed vetting, so say what's missing.
+function VerificationNote({ company }: { company: CurrentEmployer["company"] }) {
+  if (!company.verifiedAt) {
+    return (
+      <p className="text-sm text-warning">
+        Verify {company.domain} to publish jobs.{" "}
+        <Link href={COMPANY_PATH} className="font-medium underline underline-offset-4">
+          Verify now
+        </Link>
+      </p>
+    );
+  }
+  if (company.status === "approved") return null;
+  if (company.status === "rejected") {
     return (
       <p className="text-sm text-destructive">
         We couldn&apos;t verify your company, so candidates won&apos;t see your jobs. If this is a mistake, email{" "}
@@ -114,7 +125,7 @@ function VerificationNote({ status }: { status: CurrentEmployer["company"]["stat
   }
   return (
     <p className="text-sm text-muted-foreground">
-      We&apos;re verifying your company. Candidates see your jobs once it&apos;s verified, usually within a day.
+      We&apos;re reviewing your company. Candidates see your jobs once it&apos;s approved, usually within a day.
     </p>
   );
 }

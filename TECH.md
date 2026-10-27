@@ -46,23 +46,27 @@ sign-in, and its `type` (`candidate` | `employer`) comes from the page the user 
   the source of the profile.
 - Identities with the same verified email are linked to one user.
 
-### Companies: `/employers/login`
+### Employers: `/employers/login`
 
-A company is an organization, not a person, so it needs proof that the person works there.
+A company is an organization, not a person, so publishing needs proof that someone works there.
 
-1. **Work email only.** Sign in with a magic link to a work address, or with Google (this covers
-   Google Workspace).
-2. **Free-mail domains are rejected** (gmail.com, yahoo.com, outlook.com, …), checked against a
-   maintained list package.
-3. **The email domain is the company.** The first person from a domain creates the `companies` row
-   (domain, name, status) and becomes its `owner` in `company_members`. Later sign-ups from the same
-   domain join as `member`s. Owners can invite and remove teammates.
-4. **AI vetting.** Creating a company triggers an Inngest job. It fetches the domain's homepage and
-   gives Claude the domain, the company name and the page text. Claude returns
-   `approve | reject | needs_review` with a reason, and both are stored.
-5. **A human checks only when needed.** Companies marked `needs_review` or `reject` appear in a small
-   `/admin` page (the admin is a user id set in an env var), where we approve or reject them by hand.
-   A company's jobs go live only when its status is `approved`.
+1. **Any email signs up**, personal or work: **Google**, or **email + password** (Supabase confirms the
+   email; "Forgot password?" emails a reset link). The same email reaches one account whichever
+   method is used (Supabase links identities with the same verified email; a reset adds a password
+   to a Google-only account).
+2. **An employer creates a company** (`companies`: name, domain, website, logo link, description) and
+   becomes its `owner` in `company_members` (`owner | admin | recruiter`). Owners and admins invite
+   teammates by email (`company_invites`) and change roles; only the owner deletes the company. The
+   app shows one company per employer.
+3. **Domain verification.** A company is unverified until a member opens a one-time link (24 h, hash
+   stored in `company_domain_verifications`) sent to an address on its domain; that sets
+   `verified_at`. Free-mail domains can't be claimed. Only one company can verify a domain.
+   **Only verified companies publish jobs** (server check plus a database trigger).
+4. **AI vetting.** Verifying the domain starts vetting: the server fetches the domain's homepage
+   and Claude returns `approve | reject | needs_review` with a reason, both stored.
+5. **A human checks only when needed.** Companies marked `needs_review` or `reject` appear in
+   `/admin` (admins are user ids in an env var). Candidates see a company's jobs only when it is
+   verified **and** `approved`.
 6. **The domain also protects candidates.** A candidate lists their current employer's domain, and
    companies with that domain never see them in matches.
 
@@ -126,7 +130,7 @@ Check the vendors' current pricing pages.
 | Not now | Add when |
 |---|---|
 | Payments (Stripe) | We start charging employers |
-| Facebook / Microsoft / password login | Users ask for them or sign-up drop-off shows they're needed |
+| Facebook / Microsoft login, passwords for candidates | Users ask for them or sign-up drop-off shows they're needed |
 | Enterprise SSO (SAML) | A large customer requires it |
 | Redis / caching layer | Postgres queries become a measured bottleneck |
 | Search engine (Algolia, Typesense) | We need free-text search, which matching doesn't |

@@ -1,14 +1,14 @@
 import { Sparkles } from "lucide-react";
 import { SITE_NAME } from "@/lib/site";
 
-// The logo: a spark-gradient mark and the name.
-export function Brand() {
+// The logo: a spark-gradient mark and the name. `nameClassName` can hide the name visually on narrow screens.
+export function Brand({ nameClassName }: { nameClassName?: string }) {
   return (
     <span className="inline-flex items-center gap-2 text-base font-semibold tracking-tight">
       <span aria-hidden className="flex size-7 items-center justify-center rounded-lg bg-linear-to-br from-spark-1 to-spark-2 text-primary-foreground">
         <Sparkles className="size-4" />
       </span>
-      {SITE_NAME}
+      <span className={nameClassName}>{SITE_NAME}</span>
     </span>
   );
 }

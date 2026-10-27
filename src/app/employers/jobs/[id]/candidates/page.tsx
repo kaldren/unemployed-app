@@ -7,7 +7,7 @@ import { CandidateCardBody } from "@/components/match-cards";
 import { PageLoading } from "@/components/page-loading";
 import { SwipeDeck } from "@/components/swipe-deck";
 import { Button } from "@/components/ui/button";
-import { requireEmployer } from "@/lib/auth";
+import { canHire, requireEmployer } from "@/lib/auth";
 import { getJob } from "@/lib/jobs/queries";
 import { getCandidateDeck } from "@/lib/matching/queries";
 import { refreshMatches } from "@/lib/matching/run";
@@ -31,7 +31,7 @@ async function Candidates({ params }: Pick<PageProps<"/employers/jobs/[id]/candi
   const job = await getJob(user.company.id, id);
   if (!job) notFound();
 
-  const approved = user.company.status === "approved";
+  const approved = canHire(user.company);
   const open = job.status === "open";
   const deck = approved && open ? await getCandidateDeck(job.id, user.company.domain) : [];
   if (approved && open) refreshMatches({ jobId: job.id });
