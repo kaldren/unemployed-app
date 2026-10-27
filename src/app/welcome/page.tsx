@@ -2,8 +2,10 @@ import { Briefcase, Search } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { openView } from "@/app/account/actions";
+import { signOut } from "@/app/auth/actions";
 import { SparkText } from "@/components/brand";
 import { PageLoading } from "@/components/page-loading";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -67,6 +69,12 @@ async function Welcome() {
             </li>
           ))}
         </ul>
+        <form action={signOut} className="text-center text-sm text-muted-foreground">
+          Not {user.email}?{" "}
+          <Button type="submit" variant="link" size="sm" className="h-auto px-0">
+            Sign out
+          </Button>
+        </form>
       </div>
     </main>
   );

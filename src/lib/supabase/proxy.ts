@@ -1,15 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/env";
-import { LOGIN_PATH } from "@/lib/portal";
+import { LOGIN_PATH, safeNextPath } from "@/lib/portal";
 
 // Employers used to sign in here; old links (invite emails) forward to the one sign-in page.
 const OLD_EMPLOYER_LOGIN = "/employers/login";
-const LOGIN_PATHS = [LOGIN_PATH];
 
 // Paths a signed-out visitor may open, with everything under them. Everything else requires a session.
 // Cron routes check their own secret.
-const PUBLIC_PATHS = [...LOGIN_PATHS, "/auth", "/privacy", "/terms", "/api/cron"];
+const PUBLIC_PATHS = [LOGIN_PATH, "/auth", "/privacy", "/terms", "/api/cron"];
 // The home page is the landing page for visitors; it's public by itself, not with what's under it.
 const PUBLIC_PAGES = ["/"];
 
@@ -57,8 +56,11 @@ export async function updateSession(request: NextRequest) {
     return redirectWithCookies(url, response);
   }
 
-  if (signedIn && LOGIN_PATHS.includes(pathname)) {
-    return redirectWithCookies(new URL("/", request.url), response);
+  if (signedIn && pathname === LOGIN_PATH) {
+    // Already signed in: open `next` (e.g. an invite email's link), never the sign-in page itself.
+    const next = new URL(safeNextPath(request.nextUrl.searchParams.get("next")), request.url);
+    const isLogin = next.pathname === LOGIN_PATH || next.pathname === OLD_EMPLOYER_LOGIN;
+    return redirectWithCookies(isLogin ? new URL("/", request.url) : next, response);
   }
 
   return response;

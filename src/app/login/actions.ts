@@ -4,10 +4,9 @@ import type { Route } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { safeNextPath } from "@/lib/auth";
 import { emailSchema } from "@/lib/employer/company";
 import { newPasswordSchema } from "@/lib/password";
-import { AUTH_ERRORS, PASSWORD_PATH } from "@/lib/portal";
+import { AUTH_ERRORS, PASSWORD_PATH, safeNextPath } from "@/lib/portal";
 import { ensureProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 

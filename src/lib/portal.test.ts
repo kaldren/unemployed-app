@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authErrorMessage, parseView } from "./portal";
+import { authErrorMessage, parseView, safeNextPath } from "./portal";
 
 describe("parseView", () => {
   it("accepts the two views", () => {
@@ -18,5 +18,14 @@ describe("authErrorMessage", () => {
     expect(authErrorMessage("candidate_account")).toMatch(/Something went wrong/);
     expect(authErrorMessage("constructor")).toMatch(/Something went wrong/);
     expect(authErrorMessage(undefined)).toBeNull();
+  });
+});
+
+describe("safeNextPath", () => {
+  it("keeps same-site paths and falls back for anything else", () => {
+    expect(safeNextPath("/employers/company/new")).toBe("/employers/company/new");
+    for (const value of [null, undefined, "", "https://evil.test", "//evil.test", "/\\evil.test"]) {
+      expect(safeNextPath(value, "/home")).toBe("/home");
+    }
   });
 });

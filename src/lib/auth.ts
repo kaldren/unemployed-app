@@ -6,6 +6,7 @@ import { cache } from "react";
 import { db } from "@/db";
 import { companies, companyMembers, profiles, type Company, type CompanyRole, type Profile } from "@/db/schema";
 import { LOGIN_PATH, NEW_COMPANY_PATH } from "@/lib/portal";
+
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = Pick<Profile, "id" | "defaultView" | "fullName" | "email" | "avatarUrl">;
@@ -100,10 +101,3 @@ export async function requireAdmin(): Promise<CurrentUser> {
   return user;
 }
 
-// Only allow same-origin relative paths, so `next` can't become an open redirect.
-export function safeNextPath(next: string | null | undefined, fallback = "/"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return fallback;
-  }
-  return next;
-}

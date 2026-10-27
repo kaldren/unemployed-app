@@ -208,6 +208,11 @@ test.describe("signed in", () => {
       await page.goto(path);
       await expect(page).toHaveURL("/employers");
     }
+    // Signed in, a link to sign in (e.g. from an invite email) opens its `next`, never /login again.
+    await page.goto("/login?next=%2Femployers%2Fcompany");
+    await expect(page).toHaveURL("/employers/company");
+    await page.goto("/login?next=%2Flogin");
+    await expect(page).toHaveURL("/employers");
 
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL("/login");

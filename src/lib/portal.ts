@@ -13,6 +13,14 @@ export const MATCHES_PATH = { candidate: "/matches", employer: "/employers/match
   string
 >;
 
+// Only allow same-origin relative paths, so `next` can't become an open redirect.
+export function safeNextPath(next: string | null | undefined, fallback = "/"): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return fallback;
+  }
+  return next;
+}
+
 export function parseView(value: unknown): AppView | null {
   return value === "candidate" || value === "employer" ? value : null;
 }

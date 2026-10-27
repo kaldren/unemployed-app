@@ -54,7 +54,7 @@ export function AppHeader({
         <form action={openView}>
           <input type="hidden" name="view" value={other} />
           <Button type="submit" variant="outline" size="sm">
-            <ArrowLeftRight aria-hidden />
+            <ArrowLeftRight aria-hidden className="max-sm:hidden" />
             {other === "employer" ? "Hire" : "Find jobs"}
           </Button>
         </form>

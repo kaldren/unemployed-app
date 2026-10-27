@@ -4,8 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { SparkText } from "@/components/brand";
 import { GoogleButton } from "@/components/google-button";
 import { ConsentNote, SiteFooter } from "@/components/site-footer";
-import { safeNextPath } from "@/lib/auth";
-import { authErrorMessage } from "@/lib/portal";
+import { authErrorMessage, safeNextPath } from "@/lib/portal";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import { PasswordForm } from "./password-form";
 

@@ -1,7 +1,6 @@
 import type { EmailOtpType, User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { safeNextPath } from "@/lib/auth";
-import { LOGIN_PATH, type AuthError } from "@/lib/portal";
+import { LOGIN_PATH, safeNextPath, type AuthError } from "@/lib/portal";
 import { ensureProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
