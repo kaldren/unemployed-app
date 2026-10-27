@@ -18,7 +18,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { anonRole, authenticatedRole, authUsers } from "drizzle-orm/supabase";
 
-export const profileType = pgEnum("profile_type", ["candidate", "employer"]);
+// Which dashboard a user lands on: finding a job or hiring. Any user can do both; this only picks the
+// landing page and the nav's current view. Null until they answer the first-sign-in question.
+export const appView = pgEnum("app_view", ["candidate", "employer"]);
+export type AppView = (typeof appView.enumValues)[number];
 
 const isOwner = sql`(select auth.uid()) = id`;
 
@@ -29,7 +32,7 @@ export const profiles = pgTable(
     id: uuid()
       .primaryKey()
       .references(() => authUsers.id, { onDelete: "cascade" }),
-    type: profileType().notNull(),
+    defaultView: appView("default_view"),
     fullName: text("full_name"),
     email: text().notNull(),
     avatarUrl: text("avatar_url"),

@@ -5,10 +5,11 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { db } from "@/db";
 import { companies, companyMembers, profiles, type Company, type CompanyRole, type Profile } from "@/db/schema";
-import { HOME_PATH, NEW_COMPANY_PATH } from "@/lib/portal";
+import { LOGIN_PATH, NEW_COMPANY_PATH } from "@/lib/portal";
+
 import { createClient } from "@/lib/supabase/server";
 
-export type CurrentUser = Pick<Profile, "id" | "type" | "fullName" | "email" | "avatarUrl">;
+export type CurrentUser = Pick<Profile, "id" | "defaultView" | "fullName" | "email" | "avatarUrl">;
 
 // The signed-in user's id, or null for a visitor. For public pages that look different when signed in.
 export async function getSessionUserId(): Promise<string | null> {
@@ -26,12 +27,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims.sub;
-  if (!userId) redirect("/login");
+  if (!userId) redirect(LOGIN_PATH);
 
   const [profile] = await db
     .select({
       id: profiles.id,
-      type: profiles.type,
+      defaultView: profiles.defaultView,
       fullName: profiles.fullName,
       email: profiles.email,
       avatarUrl: profiles.avatarUrl,
@@ -46,26 +47,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   return profile;
 });
 
-// getCurrentUser for candidate-only pages and actions; anyone else goes home.
-export async function requireCandidate(): Promise<CurrentUser> {
-  const user = await getCurrentUser();
-  if (user.type !== "candidate") redirect(HOME_PATH[user.type]);
-  return user;
-}
-
 export type CurrentEmployer = CurrentUser & {
   company: Pick<Company, "id" | "name" | "domain" | "status" | "verifiedAt">;
   role: CompanyRole;
 };
 
-// getCurrentUser for employer pages that work without a company (create one, accept an invite, password).
-export async function requireEmployerAccount(): Promise<CurrentUser> {
-  const user = await getCurrentUser();
-  if (user.type !== "employer") redirect("/");
-  return user;
-}
-
-// The company an employer works in: their oldest membership (the app shows one company per employer).
+// The company a user hires for: their oldest membership (the app shows one company per user).
 export async function getMembership(userId: string) {
   const [membership] = await db
     .select({
@@ -86,10 +73,10 @@ export async function getMembership(userId: string) {
   return membership ?? null;
 }
 
-// getCurrentUser for employer-only pages and actions, with the employer's company; anyone else goes home,
-// and an employer without a company goes to create one (or accept an invite).
+// getCurrentUser for hiring pages and actions, with the user's company. Hiring rights come from company
+// membership, not the account: a user without a company goes to create one (or accept an invite).
 export const requireEmployer = cache(async (): Promise<CurrentEmployer> => {
-  const user = await requireEmployerAccount();
+  const user = await getCurrentUser();
   const membership = await getMembership(user.id);
   if (!membership) redirect(NEW_COMPANY_PATH);
   return { ...user, ...membership };
@@ -114,10 +101,3 @@ export async function requireAdmin(): Promise<CurrentUser> {
   return user;
 }
 
-// Only allow same-origin relative paths, so `next` can't become an open redirect.
-export function safeNextPath(next: string | null | undefined, fallback = "/"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return fallback;
-  }
-  return next;
-}

@@ -40,10 +40,7 @@ export function Landing() {
             <Brand />
           </span>
           <Button asChild variant="ghost" size="sm">
-            <Link href={LOGIN_PATH.employer}>For employers</Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href={LOGIN_PATH.candidate}>Sign in</Link>
+            <Link href={LOGIN_PATH}>Sign in</Link>
           </Button>
         </div>
       </header>
@@ -59,10 +56,10 @@ export function Landing() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button asChild size="lg" variant="spark">
-                <Link href={LOGIN_PATH.candidate}>Find a job</Link>
+                <Link href={LOGIN_PATH}>Find a job</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href={LOGIN_PATH.employer}>Hire with us</Link>
+                <Link href={LOGIN_PATH}>Hire with us</Link>
               </Button>
             </div>
           </section>

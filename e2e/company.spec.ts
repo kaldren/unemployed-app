@@ -125,7 +125,7 @@ test("owners invite teammates, who join and get their role changed or removed", 
   await fill(page, "Invite by email", TEAMMATE.email.toUpperCase());
   await page.getByRole("button", { name: "Send invite" }).click();
   await expect(page.getByText("Invite sent")).toBeVisible();
-  expect(await latestLink(TEAMMATE.email, /href="([^"]*\/employers\/login[^"]*)"/)).toContain("next=/employers/company/new");
+  expect(await latestLink(TEAMMATE.email, /href="([^"]*\/login\?[^"]*)"/)).toContain("next=/employers/company/new");
   const invites = page.getByRole("list", { name: "Pending invites" });
   await expect(invites.getByText(TEAMMATE.email)).toBeVisible();
   await expect(invites.getByText("Recruiter")).toBeVisible();

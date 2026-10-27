@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/app-header";
 import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getMembership, requireEmployerAccount } from "@/lib/auth";
+import { getCurrentUser, getMembership } from "@/lib/auth";
 import { isFreeMailDomain, ROLE_LABELS } from "@/lib/employer/company";
 import { invitesForEmail } from "@/lib/employer/companies";
 import { emailDomain } from "@/lib/employer/work-email";
@@ -27,14 +27,14 @@ export default function NewCompanyPage() {
 
 // Where an employer without a company lands: join one they're invited to, or create their own.
 async function NewCompany() {
-  const user = await requireEmployerAccount();
+  const user = await getCurrentUser();
   if (await getMembership(user.id)) redirect(HOME_PATH.employer);
   const invites = await invitesForEmail(user.email);
   const ownDomain = emailDomain(user.email);
 
   return (
     <>
-      <AppHeader user={user} />
+      <AppHeader user={user} view="employer" />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-xl flex-col gap-8">
           <div className="flex flex-col gap-1.5">

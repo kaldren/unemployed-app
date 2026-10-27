@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageLoading } from "@/components/page-loading";
-import { requireCandidate } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { COMPLETENESS_STEPS, getMissingItems, type ProfileSection } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
@@ -39,7 +39,7 @@ const str = (v: string | number | null | undefined) => (v == null ? "" : String(
 const month = (date: string | null) => (date ? date.slice(0, 7) : "");
 
 async function ProfileEditor() {
-  const user = await requireCandidate();
+  const user = await getCurrentUser();
 
   const [data, catalog] = await Promise.all([getCandidateProfile(user.id), getCatalogNames()]);
   const p = data.profile;
@@ -196,7 +196,7 @@ async function ProfileEditor() {
 
   return (
     <>
-      <AppHeader user={user} current="profile" />
+      <AppHeader user={user} view="candidate" current="profile" />
       <main className="flex flex-1 justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-5xl flex-col gap-10">
           <header className="flex flex-col gap-4">

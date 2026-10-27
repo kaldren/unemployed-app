@@ -36,28 +36,29 @@ as a safety net. The only client-side Supabase use is auth and the Realtime chat
 
 ## Authentication
 
-There are two kinds of users with two separate sign-in pages. A `profiles` row is created on first
-sign-in, and its `type` (`candidate` | `employer`) comes from the page the user signed in on.
+**One kind of account, one sign-in page** (`/login`), like LinkedIn: the same user looks for jobs and
+hires. Sign in with **Google** or **email + password** (Supabase confirms the email; "Forgot password?"
+emails a reset link). Supabase links identities with the same verified email, so one email is one user
+whichever method is used (a reset adds a password to a Google-only account). A `profiles` row is created
+on first sign-in; there is no account type.
 
-### Candidates: `/login`
+- **Onboarding.** After the first sign-in, `/welcome` asks "What do you want to do first?" (Find a job /
+  Hire) and stores it in `profiles.default_view` (`candidate | employer`). It only picks the landing
+  dashboard (`/` or `/employers`); the nav's switch ("Hire" / "Find jobs") changes views anytime and
+  remembers the last one.
+- **Candidates** keep one candidate profile, built from the **uploaded resume** and the profile editor.
+- **Hiring rights come from company membership**, never from the account.
 
-- Social sign-in only, with **Google** or **LinkedIn** (OpenID Connect, `linkedin_oidc` in Supabase).
-- LinkedIn only gives us name, email and photo, not work history. The **uploaded resume** is still
-  the source of the profile.
-- Identities with the same verified email are linked to one user.
-
-### Employers: `/employers/login`
+### Companies
 
 A company is an organization, not a person, so publishing needs proof that someone works there.
 
-1. **Any email signs up**, personal or work: **Google**, or **email + password** (Supabase confirms the
-   email; "Forgot password?" emails a reset link). The same email reaches one account whichever
-   method is used (Supabase links identities with the same verified email; a reset adds a password
-   to a Google-only account).
-2. **An employer creates a company** (`companies`: name, domain, website, logo link, description) and
+1. **Any account can hire**, with a personal or work email.
+2. **A user creates a company** (`companies`: name, domain, website, logo link, description) and
    becomes its `owner` in `company_members` (`owner | admin | recruiter`). Owners and admins invite
    teammates by email (`company_invites`) and change roles; only the owner deletes the company. The
-   app shows one company per employer.
+   app shows one company per user. Members keep their candidate profile and never match with a
+   company on a domain they hire for.
 3. **Domain verification.** A company is unverified until a member opens a one-time link (24 h, hash
    stored in `company_domain_verifications`) sent to an address on its domain; that sets
    `verified_at`. Free-mail domains can't be claimed. Only one company can verify a domain.
@@ -130,7 +131,7 @@ Check the vendors' current pricing pages.
 | Not now | Add when |
 |---|---|
 | Payments (Stripe) | We start charging employers |
-| Facebook / Microsoft login, passwords for candidates | Users ask for them or sign-up drop-off shows they're needed |
+| LinkedIn, Facebook, Microsoft login | Users ask for them or sign-up drop-off shows they're needed |
 | Enterprise SSO (SAML) | A large customer requires it |
 | Redis / caching layer | Postgres queries become a measured bottleneck |
 | Search engine (Algolia, Typesense) | We need free-text search, which matching doesn't |

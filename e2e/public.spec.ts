@@ -10,7 +10,7 @@ test("visitors see the landing page, with ways in and the legal pages", async ({
   await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
 
   await page.getByRole("link", { name: "Hire with us" }).click();
-  await expect(page).toHaveURL("/employers/login");
+  await expect(page).toHaveURL("/login");
   await expect(page.getByText("By continuing you agree to our Terms and Privacy Policy.")).toBeVisible();
 
   await page.goto("/");

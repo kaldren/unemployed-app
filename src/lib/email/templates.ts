@@ -56,7 +56,7 @@ export function companyInviteEmail({ companyName, inviterName }: { companyName: 
       `${inviterName || "A teammate"} invited you to hire with ${companyName} on ${SITE_NAME}.`,
       "Sign in or create an account with this email address, then accept the invite.",
     ],
-    action: { label: "Accept the invite", path: "/employers/login?next=/employers/company/new" },
+    action: { label: "Accept the invite", path: "/login?next=/employers/company/new" },
   });
 }
 

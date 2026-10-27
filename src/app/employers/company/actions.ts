@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getMembership, requireEmployer, requireEmployerAccount, type CurrentEmployer } from "@/lib/auth";
+import { getCurrentUser, getMembership, requireEmployer, type CurrentEmployer } from "@/lib/auth";
 import { parseFormJson as parseData, toActionError, type ActionState } from "@/lib/candidate/schemas";
 import { canManageCompany, companyProfileSchema, emailSchema, inviteSchema, isEmailOnDomain, newCompanySchema } from "@/lib/employer/company";
 import {
@@ -40,7 +40,7 @@ function revalidateCompany() {
 }
 
 export async function createCompanyAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireEmployerAccount();
+  const user = await getCurrentUser();
   if (await getMembership(user.id)) return { status: "error", message: ONE_COMPANY };
   const parsed = parseData(newCompanySchema, formData);
   if (!parsed) return { status: "error", message: GENERIC_ERROR };
@@ -56,7 +56,7 @@ export async function createCompanyAction(_prev: ActionState, formData: FormData
 }
 
 export async function acceptInviteAction(formData: FormData) {
-  const user = await requireEmployerAccount();
+  const user = await getCurrentUser();
   const inviteId = z.uuid().safeParse(formData.get("inviteId"));
   if (!inviteId.success || (await getMembership(user.id))) redirect(NEW_COMPANY_PATH);
   // The profile email is the confirmed sign-in email, so only its owner can accept.
