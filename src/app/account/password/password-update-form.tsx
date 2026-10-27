@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionState } from "@/lib/candidate/schemas";
-import { PASSWORD_MIN } from "@/lib/employer/password";
+import { PASSWORD_MIN } from "@/lib/password";
 import { updatePassword } from "./actions";
 
 const IDLE: ActionState = { status: "idle" };

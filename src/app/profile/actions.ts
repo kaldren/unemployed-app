@@ -15,7 +15,7 @@ import {
   experiences,
   profiles,
 } from "@/db/schema";
-import { requireCandidate } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { ensureRoles, ensureSkills, type Tx } from "@/lib/candidate/catalog";
 import {
   ABOUT_MAX,
@@ -48,7 +48,7 @@ function sectionAction<S extends z.ZodType>(
   save: (tx: Tx, profileId: string, data: z.output<S>) => Promise<unknown>,
 ) {
   return async (_prev: ActionState, formData: FormData): Promise<ActionState> => {
-    const user = await requireCandidate();
+    const user = await getCurrentUser();
     let raw: unknown;
     try {
       raw = JSON.parse(String(formData.get("data") ?? ""));
@@ -167,7 +167,7 @@ const RESUME_BUCKET = "resumes";
 // Lists (experience, skills, education, certifications, languages) are replaced;
 // text fields the candidate already filled in are kept.
 export async function importResume(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireCandidate();
+  const user = await getCurrentUser();
   if (!RESUME_IMPORT_ENABLED) return { status: "error", message: "Resume import is not available right now." };
   const file = formData.get("resume");
   if (!(file instanceof File) || file.size === 0) return { status: "error", message: "Choose a PDF file." };

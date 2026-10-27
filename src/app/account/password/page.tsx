@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageLoading } from "@/components/page-loading";
-import { requireEmployerAccount } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { PasswordUpdateForm } from "./password-update-form";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default function PasswordPage() {
 }
 
 async function SetPassword() {
-  const user = await requireEmployerAccount();
+  const user = await getCurrentUser();
   return (
     <>
       <AppHeader user={user} />

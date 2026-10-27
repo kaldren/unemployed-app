@@ -12,7 +12,7 @@ import { getMissingItems } from "@/lib/candidate/completeness";
 import { getCandidateProfile } from "@/lib/candidate/queries";
 import { getJobDeck, getSwipeActivity } from "@/lib/matching/queries";
 import { refreshMatches } from "@/lib/matching/run";
-import { HOME_PATH, MATCHES_PATH } from "@/lib/portal";
+import { HOME_PATH, MATCHES_PATH, WELCOME_PATH } from "@/lib/portal";
 import { swipeJob } from "./actions";
 import { Landing } from "./landing";
 
@@ -25,10 +25,12 @@ export default function Home() {
 }
 
 async function Jobs() {
-  // Visitors get the landing page; signed-in candidates their deck.
+  // Visitors get the landing page; signed-in users the dashboard of their default view, which they
+  // pick after the first sign-in.
   if (!(await getSessionUserId())) return <Landing />;
   const user = await getCurrentUser();
-  if (user.type === "employer") redirect(HOME_PATH.employer);
+  if (!user.defaultView) redirect(WELCOME_PATH);
+  if (user.defaultView === "employer") redirect(HOME_PATH.employer);
   // Candidates can't be matched until their profile is complete.
   const [profile, deck, activity] = await Promise.all([
     getCandidateProfile(user.id),
@@ -41,7 +43,7 @@ async function Jobs() {
 
   return (
     <>
-      <AppHeader user={user} />
+      <AppHeader user={user} view="candidate" />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">

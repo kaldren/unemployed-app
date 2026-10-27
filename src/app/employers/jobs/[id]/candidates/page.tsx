@@ -38,7 +38,7 @@ async function Candidates({ params }: Pick<PageProps<"/employers/jobs/[id]/candi
 
   return (
     <>
-      <AppHeader user={user} />
+      <AppHeader user={user} view="employer" />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">

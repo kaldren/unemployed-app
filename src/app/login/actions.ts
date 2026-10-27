@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { safeNextPath } from "@/lib/auth";
 import { emailSchema } from "@/lib/employer/company";
-import { newPasswordSchema } from "@/lib/employer/password";
-import { ensureEmployerProfile } from "@/lib/employer/profile";
-import { AUTH_ERRORS, HOME_PATH } from "@/lib/portal";
+import { newPasswordSchema } from "@/lib/password";
+import { AUTH_ERRORS, PASSWORD_PATH } from "@/lib/portal";
+import { ensureProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export type PasswordAuthState =
@@ -36,13 +36,12 @@ function parse<S extends z.ZodType>(schema: S, formData: FormData) {
   });
 }
 
-// Email links land on /auth/callback, which creates the employer profile and then opens `next`.
+// Email links land on /auth/callback, which creates the profile and then opens `next`.
 async function callbackUrl(next: string) {
   // Next.js only runs Server Actions whose Origin matches the host, so this is our own site.
   const origin = (await headers()).get("origin");
   if (!origin) return null;
   const url = new URL("/auth/callback", origin);
-  url.searchParams.set("portal", "employer");
   url.searchParams.set("next", next);
   return url.toString();
 }
@@ -63,13 +62,15 @@ export async function signInWithPassword(_prev: PasswordAuthState, formData: For
     return { status: "error", message: "Wrong email or password. Signed up with Google? Use Continue with Google, or reset your password." };
   }
 
-  const refused = await ensureEmployerProfile(data.user);
-  if (refused) {
+  try {
+    await ensureProfile(data.user);
+  } catch (err) {
+    console.error("Failed to create profile", err);
     await supabase.auth.signOut({ scope: "local" });
-    return { status: "error", message: AUTH_ERRORS[refused] };
+    return { status: "error", message: AUTH_ERRORS.failed };
   }
   // safeNextPath keeps it a same-site path; typed routes can't check a path from the URL.
-  redirect(safeNextPath(next, HOME_PATH.employer) as Route);
+  redirect(safeNextPath(next) as Route);
 }
 
 // Supabase emails a confirmation link. For an email that already has an account it either says so
@@ -80,7 +81,7 @@ export async function signUpWithPassword(_prev: PasswordAuthState, formData: For
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]!.message };
   const { email, password, next } = parsed.data;
 
-  const emailRedirectTo = await callbackUrl(safeNextPath(next, HOME_PATH.employer));
+  const emailRedirectTo = await callbackUrl(safeNextPath(next));
   if (!emailRedirectTo) return { status: "error", message: AUTH_ERRORS.failed };
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo } });
@@ -102,7 +103,7 @@ export async function requestPasswordReset(_prev: PasswordAuthState, formData: F
   const parsed = emailSchema.safeParse(formData.get("email") ?? "");
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]!.message };
 
-  const redirectTo = await callbackUrl("/employers/password");
+  const redirectTo = await callbackUrl(PASSWORD_PATH);
   if (!redirectTo) return { status: "error", message: AUTH_ERRORS.failed };
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo });

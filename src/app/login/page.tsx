@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { SparkText } from "@/components/brand";
 import { GoogleButton } from "@/components/google-button";
 import { ConsentNote, SiteFooter } from "@/components/site-footer";
 import { safeNextPath } from "@/lib/auth";
-import { authErrorMessage, LOGIN_PATH } from "@/lib/portal";
+import { authErrorMessage } from "@/lib/portal";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { PasswordForm } from "./password-form";
 
 export const metadata: Metadata = {
   title: "Sign in",
 };
 
+// The one sign-in page: one account finds jobs and hires, whichever method it signs in with.
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <>
@@ -26,13 +26,10 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
             <p className="text-base text-muted-foreground">{SITE_TAGLINE}</p>
           </div>
           {/* searchParams are request data, so they stream in behind a boundary. */}
-          <Suspense fallback={<GoogleButton disabled />}>
-            <SignInOptions searchParams={searchParams} />
+          <Suspense fallback={<SignInOptions disabled />}>
+            <SignInOptionsFromParams searchParams={searchParams} />
           </Suspense>
           <ConsentNote />
-          <Button asChild variant="link" size="sm">
-            <Link href={LOGIN_PATH.employer}>Hiring? Sign in as an employer</Link>
-          </Button>
         </div>
       </main>
       <SiteFooter />
@@ -40,15 +37,19 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
   );
 }
 
-async function SignInOptions({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
+async function SignInOptionsFromParams({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const params = await searchParams;
   const next = safeNextPath(typeof params.next === "string" ? params.next : null);
-  const message = authErrorMessage(params.error);
+  return <SignInOptions next={next} message={authErrorMessage(params.error)} />;
+}
 
+function SignInOptions({ next, message, disabled }: { next?: string; message?: string | null; disabled?: boolean }) {
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {message && <Alert variant="destructive">{message}</Alert>}
-      <GoogleButton next={next} />
-    </>
+      <GoogleButton next={next} disabled={disabled} />
+      <p className="text-sm text-muted-foreground">or use your email</p>
+      <PasswordForm next={next} disabled={disabled} />
+    </div>
   );
 }

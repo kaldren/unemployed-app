@@ -33,11 +33,16 @@ const isSeedDomain = (domain: SQL | AnyPgColumn | string) =>
   sql`(${domain} = ${SEED_DOMAIN} or ${domain} like ${`%.${SEED_DOMAIN}`})`;
 const emailDomain = (email: SQL | AnyPgColumn) => sql`split_part(${email}, '@', 2)`;
 
-// Jobs candidates can see: live, from a company the candidate hasn't hidden from.
+// Anyone can look for a job and hire, so people never match with a company on a domain they hire for.
+const hiresFor = (profileId: SQL | AnyPgColumn | string, domain: SQL | AnyPgColumn | string) =>
+  sql`exists (select 1 from company_members m join companies c on c.id = m.company_id where m.profile_id = ${profileId} and c.domain = ${domain})`;
+
+// Jobs candidates can see: live, from a company the candidate hasn't hidden from and doesn't hire for.
 function jobIsVisibleTo(candidateId: string): SQL {
   return and(
     jobIsLive,
     sql`not exists (select 1 from candidate_profiles cp where cp.profile_id = ${candidateId} and ${companies.domain} = any(cp.hidden_company_domains))`,
+    sql`not ${hiresFor(candidateId, companies.domain)}`,
     sql`${isSeedDomain(companies.domain)} = ${isSeedDomain(emailDomain(sql`(select p.email from profiles p where p.id = ${candidateId})`))}`,
   )!;
 }
@@ -53,12 +58,13 @@ const candidateIsComplete = sql`(
   and (select count(*) from candidate_skills s where s.profile_id = ${candidateProfiles.profileId}) >= ${MIN_SKILLS}
 )`;
 
-// Candidates a company can see: complete profiles that don't hide from the company's domain.
+// Candidates a company can see: complete profiles that don't hide from the company's domain, of people
+// who don't hire for it.
 function candidateIsVisibleTo(companyDomain: string | AnyPgColumn): SQL {
   return and(
-    eq(profiles.type, "candidate"),
     candidateIsComplete,
     sql`not (${companyDomain} = any(${candidateProfiles.hiddenCompanyDomains}))`,
+    sql`not ${hiresFor(candidateProfiles.profileId, companyDomain)}`,
     sql`${isSeedDomain(companyDomain)} = ${isSeedDomain(emailDomain(profiles.email))}`,
   )!;
 }

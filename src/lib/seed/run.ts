@@ -50,14 +50,14 @@ async function createUser(
   supabase: SupabaseClient,
   email: string,
   fullName: string,
-  type: "candidate" | "employer",
+  defaultView: "candidate" | "employer",
   id?: string,
 ) {
   const { data } = check(
     await supabase.auth.admin.createUser({ id, email, email_confirm: true, user_metadata: { full_name: fullName } }),
   );
   const userId = data.user!.id;
-  check(await supabase.from("profiles").insert({ id: userId, type, email, full_name: fullName }));
+  check(await supabase.from("profiles").insert({ id: userId, default_view: defaultView, email, full_name: fullName }));
   return userId;
 }
 
@@ -65,7 +65,6 @@ async function createUser(
 async function signInUrl(supabase: SupabaseClient, baseUrl: string, email: string, portal: SeedAccount["portal"]) {
   const { data } = check(await supabase.auth.admin.generateLink({ type: "magiclink", email }));
   const url = new URL("/auth/callback", baseUrl);
-  if (portal === "employer") url.searchParams.set("portal", "employer");
   if (portal === "admin") url.searchParams.set("next", "/admin");
   url.searchParams.set("type", "magiclink");
   url.searchParams.set("token_hash", data.properties!.hashed_token);

@@ -26,7 +26,7 @@ async function Matches() {
 
   return (
     <>
-      <AppHeader user={user} current="matches" />
+      <AppHeader user={user} view="employer" current="matches" />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">

@@ -32,7 +32,7 @@ const { user, properties } = link as { user: { id: string }; properties: { hashe
 const userId = user.id;
 
 check(
-  await supabase.from("profiles").upsert({ id: userId, type: "employer", email: DEMO.email, full_name: DEMO.fullName }),
+  await supabase.from("profiles").upsert({ id: userId, default_view: "employer", email: DEMO.email, full_name: DEMO.fullName }),
 );
 // Domains are unique only once verified, so find the demo company before creating it.
 const { data: existing } = check(await supabase.from("companies").select("id").eq("domain", COMPANY.domain).maybeSingle());
@@ -49,7 +49,6 @@ check(
 );
 
 const signIn = new URL("/auth/callback", process.argv[2] ?? "http://localhost:3000");
-signIn.searchParams.set("portal", "employer");
 signIn.searchParams.set("type", "magiclink");
 signIn.searchParams.set("token_hash", properties.hashed_token);
 console.log(`${DEMO.email} owns ${COMPANY.name} (approved). Open this link to sign in:\n${signIn}`);

@@ -50,7 +50,7 @@ export async function setProfile(userId: string, exists: boolean, user: TestUser
   const { error } = exists
     ? await supabase.from("profiles").upsert({
         id: userId,
-        type: "candidate",
+        default_view: "candidate",
         email: user.email,
         full_name: user.fullName,
       })

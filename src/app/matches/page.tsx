@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/app-header";
 import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireCandidate } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { listCandidateMatches } from "@/lib/matching/queries";
 
 export const metadata: Metadata = {
@@ -21,12 +21,12 @@ export default function MatchesPage() {
 }
 
 async function Matches() {
-  const user = await requireCandidate();
+  const user = await getCurrentUser();
   const matches = await listCandidateMatches(user.id);
 
   return (
     <>
-      <AppHeader user={user} current="matches" />
+      <AppHeader user={user} view="candidate" current="matches" />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">

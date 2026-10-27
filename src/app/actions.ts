@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { requireCandidate } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { notifyMatchSoon } from "@/lib/email/notify";
 import { canCandidateSee, isCandidateComplete, recordCandidateSwipe } from "@/lib/matching/queries";
 import { SWIPE_ERROR, type SwipeResult } from "@/lib/matching/swipe";
@@ -10,7 +10,7 @@ const swipeSchema = z.object({ jobId: z.uuid(), liked: z.boolean() });
 
 // A candidate likes or passes on a job from their deck.
 export async function swipeJob(jobId: string, liked: boolean): Promise<SwipeResult> {
-  const user = await requireCandidate();
+  const user = await getCurrentUser();
   const parsed = swipeSchema.safeParse({ jobId, liked });
   if (!parsed.success) return { status: "error", message: SWIPE_ERROR };
 

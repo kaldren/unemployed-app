@@ -32,7 +32,7 @@ async function Job({ params }: Pick<PageProps<"/employers/jobs/[id]">, "params">
 
   return (
     <>
-      <AppHeader user={user} />
+      <AppHeader user={user} view="employer" />
       <main className="flex justify-center px-4 pt-6 pb-16">
         <div className="flex w-full max-w-2xl flex-col gap-6">
           <div className="flex flex-wrap items-end justify-between gap-4">

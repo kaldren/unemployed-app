@@ -23,7 +23,7 @@ export async function resetEmployers({ withCompany = true, verified = true } = {
 }
 
 async function createEmployerProfile(id: string, user: typeof OWNER) {
-  check(await admin().from("profiles").insert({ id, type: "employer", email: user.email, full_name: user.fullName }));
+  check(await admin().from("profiles").insert({ id, default_view: "employer", email: user.email, full_name: user.fullName }));
 }
 
 async function createCompany(ownerId: string, verified: boolean) {
@@ -49,10 +49,10 @@ export async function addTeammate() {
   return id;
 }
 
-// Opens a magic link the way the email would, through the employer callback.
-export async function openEmployerMagicLink(page: Page, email: string) {
+// Opens a magic link the way the email would, through the callback, straight into the hiring view.
+export async function openEmployerMagicLink(page: Page, email: string, next = "/employers") {
   const tokenHash = await magicLinkTokenHash(email);
-  await page.goto(`/auth/callback?portal=employer&type=magiclink&token_hash=${tokenHash}`);
+  await page.goto(`/auth/callback?type=magiclink&token_hash=${tokenHash}&next=${encodeURIComponent(next)}`);
 }
 
 export async function membership(userId: string) {

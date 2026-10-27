@@ -32,7 +32,7 @@ describe("company emails", () => {
     const email = companyInviteEmail({ companyName: "Acme", inviterName: "Ana" });
     expect(email.subject).toBe("Join Acme on Unemployed");
     expect(email.text).toContain("Ana invited you to hire with Acme");
-    expect(email.text).toContain("http://localhost:3000/employers/login?next=/employers/company/new");
+    expect(email.text).toContain("http://localhost:3000/login?next=/employers/company/new");
   });
 
   it("verification link carries the token", () => {
