@@ -2,11 +2,13 @@ import { Briefcase, Search } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { openView } from "@/app/account/actions";
+import { NameStep } from "@/app/account/name-fields";
 import { signOut } from "@/app/auth/actions";
 import { SparkText } from "@/components/brand";
 import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, type CurrentUser } from "@/lib/auth";
+import { firstNameOf, hasName, splitFullName } from "@/lib/name";
 
 export const metadata: Metadata = {
   title: "Welcome",
@@ -38,7 +40,8 @@ export default function WelcomePage() {
 
 async function Welcome() {
   const user = await getCurrentUser();
-  const firstName = user.fullName?.trim().split(/\s+/)[0];
+  if (!hasName(user)) return <AskName user={user} />;
+  const firstName = firstNameOf(user);
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
@@ -75,6 +78,25 @@ async function Welcome() {
             Sign out
           </Button>
         </form>
+      </div>
+    </main>
+  );
+}
+
+// Accounts from Google without a name (or from before names were asked) give it first.
+function AskName({ user }: { user: CurrentUser }) {
+  const split = splitFullName(user.fullName);
+  return (
+    <main className="flex flex-1 items-center justify-center px-4 py-16">
+      <div className="flex w-full max-w-sm flex-col gap-8">
+        <div className="flex flex-col gap-2 text-center">
+          <p className="text-sm font-medium text-primary">Welcome</p>
+          <h1 className="text-4xl font-semibold tracking-tight text-balance">
+            What&apos;s your <SparkText>name</SparkText>?
+          </h1>
+          <p className="text-base text-muted-foreground">Companies and teammates see it.</p>
+        </div>
+        <NameStep initial={{ firstName: user.firstName ?? split.firstName ?? "", lastName: user.lastName ?? split.lastName ?? "" }} />
       </div>
     </main>
   );

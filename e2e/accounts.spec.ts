@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedCompleteCandidate } from "./support/candidate";
 import { openEmployerMagicLink, OWNER, resetEmployers } from "./support/employer";
 import { clearInbox, latestAuthLink } from "./support/mailpit";
-import { admin, getOrCreateUserId, hasServiceRoleKey, signIn } from "./support/test-user";
+import { admin, getOrCreateUserId, hasServiceRoleKey, signIn, signOutFromMenu } from "./support/test-user";
 
 // Any email may sign up, personal ones included.
 const NEW_USER = { email: "e2e-new-user@gmail.com", fullName: "E2E New User" };
@@ -78,6 +78,8 @@ test.describe("signed in", () => {
 
     await page.goto("/login");
     await openSignUp(page);
+    await page.getByLabel("First name").fill("Nia");
+    await page.getByLabel("Last name").fill("Newman");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill("short");
     await page.getByRole("button", { name: "Create account" }).click();
@@ -99,6 +101,8 @@ test.describe("signed in", () => {
     await expect(page.getByRole("heading", { name: "What do you want to do first?" })).toBeVisible();
     await page.getByRole("button", { name: /^Hire/ }).click();
     await expect(page).toHaveURL("/employers/company/new");
+    // The name given at sign-up is the account's name.
+    await expect(page.getByRole("button", { name: "Account: Nia Newman" })).toBeVisible();
     // A personal address leaves the domain for the user to fill in.
     await expect(page.getByLabel("Domain")).toHaveValue("");
     const userId = await getOrCreateUserId(NEW_USER);
@@ -129,6 +133,8 @@ test.describe("signed in", () => {
     // Signing up again with that email creates nothing, and says what to do.
     await page.goto("/login");
     await openSignUp(page);
+    await page.getByLabel("First name").fill("Nia");
+    await page.getByLabel("Last name").fill("Newman");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(PASSWORD);
     await page.getByRole("button", { name: "Create account" }).click();
@@ -214,7 +220,7 @@ test.describe("signed in", () => {
     await page.goto("/login?next=%2Flogin");
     await expect(page).toHaveURL("/employers");
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOutFromMenu(page);
     await expect(page).toHaveURL("/login");
     await page.goto("/employers");
     await expect(page).toHaveURL("/login?next=%2Femployers");

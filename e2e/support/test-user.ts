@@ -1,7 +1,8 @@
-import type { BrowserContext } from "@playwright/test";
+import type { BrowserContext, Page } from "@playwright/test";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseEnv } from "../../src/lib/env";
+import { splitFullName } from "../../src/lib/name";
 
 // Google blocks automated logins, so signed-in tests use a dedicated email user
 // whose session is minted with the admin API and written into the browser as cookies.
@@ -52,6 +53,8 @@ export async function setProfile(userId: string, exists: boolean, user: TestUser
         id: userId,
         default_view: "candidate",
         email: user.email,
+        first_name: splitFullName(user.fullName).firstName,
+        last_name: splitFullName(user.fullName).lastName,
         full_name: user.fullName,
       })
     : await supabase.from("profiles").delete().eq("id", userId);
@@ -94,4 +97,10 @@ export async function signIn(context: BrowserContext, { withProfile = true, user
     cookies.map((c) => ({ ...c, domain: "localhost", path: "/", sameSite: "Lax" as const })),
   );
   return userId;
+}
+
+// Signs out from the header's account menu.
+export async function signOutFromMenu(page: Page) {
+  await page.getByRole("button", { name: /^Account:/ }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
 }

@@ -2,6 +2,7 @@
 // Used by `scripts/seed.mts` (on every `pnpm dev`) and the seed e2e test. Never touches non-seed rows.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { normalizeSlug } from "../candidate/slug.ts";
+import { splitFullName } from "../name.ts";
 import { isSeedEmail, SEED_DOMAIN } from "./domain.ts";
 import { CANDIDATES, COMPANIES, SEED_ADMIN, SEED_ROLES, SEED_SKILLS, seedMatches, SWIPES } from "./fixtures.ts";
 
@@ -57,7 +58,12 @@ async function createUser(
     await supabase.auth.admin.createUser({ id, email, email_confirm: true, user_metadata: { full_name: fullName } }),
   );
   const userId = data.user!.id;
-  check(await supabase.from("profiles").insert({ id: userId, default_view: defaultView, email, full_name: fullName }));
+  const { firstName, lastName } = splitFullName(fullName);
+  check(
+    await supabase
+      .from("profiles")
+      .insert({ id: userId, default_view: defaultView, email, first_name: firstName, last_name: lastName, full_name: fullName }),
+  );
   return userId;
 }
 

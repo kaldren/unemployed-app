@@ -4,6 +4,7 @@ import type { AppView } from "@/db/schema";
 // picks the one they land on, and the nav switches between them.
 export const LOGIN_PATH = "/login";
 export const WELCOME_PATH = "/welcome";
+export const SETTINGS_PATH = "/account";
 export const PASSWORD_PATH = "/account/password";
 export const HOME_PATH = { candidate: "/", employer: "/employers" } as const satisfies Record<AppView, string>;
 export const NEW_COMPANY_PATH = "/employers/company/new";

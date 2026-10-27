@@ -1,8 +1,7 @@
-import { ArrowLeftRight, LogOut } from "lucide-react";
-import Image from "next/image";
+import { ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
 import { openView } from "@/app/account/actions";
-import { signOut } from "@/app/auth/actions";
+import { AccountMenu } from "@/components/account-menu";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import type { AppView } from "@/db/schema";
@@ -12,7 +11,7 @@ import { COMPANY_PATH, HOME_PATH, MATCHES_PATH } from "@/lib/portal";
 const navItem = "aria-[current=page]:bg-accent aria-[current=page]:text-primary";
 
 // The one bar on every signed-in page: brand (home of this view) on the left, the view's pages, a switch to
-// the other view (finding a job ↔ hiring), and the account on the right. `view` defaults to the user's own.
+// the other view (finding a job ↔ hiring), and the account menu (Settings, Sign out) on the right. `view` defaults to the user's own.
 export function AppHeader({
   user,
   view = user.defaultView ?? "candidate",
@@ -58,15 +57,7 @@ export function AppHeader({
             {other === "employer" ? "Hire" : "Find jobs"}
           </Button>
         </form>
-        <form action={signOut}>
-          <Button type="submit" variant="ghost" size="sm" aria-label="Sign out" className="max-sm:px-2.5">
-            <LogOut aria-hidden className="sm:hidden" />
-            <span className="max-sm:sr-only">Sign out</span>
-          </Button>
-        </form>
-        {user.avatarUrl && (
-          <Image src={user.avatarUrl} alt="" width={32} height={32} unoptimized className="ml-1 size-8 rounded-full ring-2 ring-brand ring-offset-2 ring-offset-background max-sm:hidden" />
-        )}
+        <AccountMenu user={user} />
       </nav>
     </header>
   );

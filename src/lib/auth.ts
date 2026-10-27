@@ -9,7 +9,7 @@ import { LOGIN_PATH, NEW_COMPANY_PATH } from "@/lib/portal";
 
 import { createClient } from "@/lib/supabase/server";
 
-export type CurrentUser = Pick<Profile, "id" | "defaultView" | "fullName" | "email" | "avatarUrl">;
+export type CurrentUser = Pick<Profile, "id" | "defaultView" | "firstName" | "lastName" | "fullName" | "email" | "avatarUrl">;
 
 // The signed-in user's id, or null for a visitor. For public pages that look different when signed in.
 export async function getSessionUserId(): Promise<string | null> {
@@ -33,6 +33,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
     .select({
       id: profiles.id,
       defaultView: profiles.defaultView,
+      firstName: profiles.firstName,
+      lastName: profiles.lastName,
       fullName: profiles.fullName,
       email: profiles.email,
       avatarUrl: profiles.avatarUrl,

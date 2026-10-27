@@ -112,7 +112,7 @@ Geist (`font-sans`, set on `html`). Use `font-mono` only for code or IDs.
 ### Space, depth and motion
 
 - Signed-in pages start with `AppHeader` (`@/components/app-header`): `Brand` → home, Matches,
-  Profile, Sign out. Active item: `bg-accent text-primary`. Never add a page-level "Home" or "Back" link.
+  Profile, the view switch, and `AccountMenu` (avatar + name → Settings, Sign out). Active item: `bg-accent text-primary`. Never add a page-level "Home" or "Back" link.
 - Page shell: `px-4 pt-6 pb-16`, content `max-w-5xl` (editors), `max-w-xl` (decks), `max-w-sm`
   (single-focus pages). No horizontal scroll at 390px.
 - Stacks: `gap-6` between blocks, `gap-4`/`gap-5` between fields, `gap-1.5` label → control.
@@ -129,6 +129,7 @@ Use `src/components/ui/*` (shadcn/ui, Radix base). Import from `@/components/ui/
 | Any button or button-styled link | `Button` (`variant`: default, spark, outline, secondary, ghost, destructive, link; `size`: sm, default, lg, icon…). Links: `<Button asChild><Link …/></Button>` |
 | Text field | `Input`, `Textarea` |
 | Dropdown | `NativeSelect` + `NativeSelectOption` |
+| Menu of actions | `DropdownMenu`, `DropdownMenuTrigger asChild` + `Button`, `DropdownMenuContent align="end"`, `DropdownMenuItem` |
 | Checkbox | `Checkbox` + `Label htmlFor` |
 | Progress toward a goal | `Progress` (spark fill; give it an `aria-label`) |
 | Surface / section | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` |
