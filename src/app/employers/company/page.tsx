@@ -40,9 +40,11 @@ async function CompanySettings({ searchParams }: Pick<PageProps<"/employers/comp
     manager ? listInvites(user.company.id) : [],
   ]);
   if (!company) return null;
-  const result = typeof params.verify === "string" && Object.hasOwn(VERIFY_RESULTS, params.verify)
-    ? VERIFY_RESULTS[params.verify as keyof typeof VERIFY_RESULTS]
+  // A spent link reads "invalid", e.g. when a mail scanner opened it first; if the company is verified, it worked.
+  const verify = typeof params.verify === "string" && Object.hasOwn(VERIFY_RESULTS, params.verify)
+    ? (params.verify as keyof typeof VERIFY_RESULTS)
     : null;
+  const result = verify === "invalid" && company.verifiedAt ? VERIFY_RESULTS.verified : verify && VERIFY_RESULTS[verify];
 
   return (
     <>
@@ -115,7 +117,6 @@ async function CompanySettings({ searchParams }: Pick<PageProps<"/employers/comp
                 <ul className="flex flex-col divide-y divide-border" aria-label="Members">
                   {members.map((member) => {
                     const name = member.fullName || member.email;
-                    const editable = manager && member.role !== "owner";
                     return (
                       <li key={member.profileId} className="flex flex-wrap items-center gap-3 py-3">
                         <div className="mr-auto flex min-w-0 flex-col">
@@ -125,7 +126,7 @@ async function CompanySettings({ searchParams }: Pick<PageProps<"/employers/comp
                           </span>
                           {member.fullName && <span className="truncate text-muted-foreground">{member.email}</span>}
                         </div>
-                        {editable && member.role !== "owner" ? (
+                        {manager && member.role !== "owner" ? (
                           <>
                             <div className="w-36">
                               <RoleSelect profileId={member.profileId} role={member.role} label={`Role for ${name}`} />

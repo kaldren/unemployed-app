@@ -40,10 +40,11 @@ export function PasswordForm({ next, disabled = false }: { next?: string; disabl
 
   // Show "check your inbox" once per send; going back shows the form again.
   const [sent, setSent] = useState<{ mode: Mode; email: string } | null>(null);
-  const [lastState, setLastState] = useState(state);
-  if (state !== lastState) {
-    setLastState(state);
-    if (state.status === "sent") setSent({ mode, email: state.email });
+  // Each mode keeps its own result, so switching modes only resyncs: a link sent earlier mustn't show again.
+  const [last, setLast] = useState({ mode, state });
+  if (last.mode !== mode || last.state !== state) {
+    setLast({ mode, state });
+    if (last.mode === mode && state.status === "sent") setSent({ mode, email: state.email });
   }
 
   function switchTo(next: Mode) {

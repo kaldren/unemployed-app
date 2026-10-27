@@ -62,7 +62,7 @@ A company is an organization, not a person, so publishing needs proof that someo
    stored in `company_domain_verifications`) sent to an address on its domain; that sets
    `verified_at`. Free-mail domains can't be claimed. Only one company can verify a domain.
    **Only verified companies publish jobs** (server check plus a database trigger).
-4. **AI vetting.** Creating a company also starts vetting: the server fetches the domain's homepage
+4. **AI vetting.** Verifying the domain starts vetting: the server fetches the domain's homepage
    and Claude returns `approve | reject | needs_review` with a reason, both stored.
 5. **A human checks only when needed.** Companies marked `needs_review` or `reject` appear in
    `/admin` (admins are user ids in an env var). Candidates see a company's jobs only when it is

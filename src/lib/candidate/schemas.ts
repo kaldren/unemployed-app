@@ -272,6 +272,15 @@ export type ActionState =
   | { status: "saved"; at: number }
   | { status: "error"; message: string; fieldErrors?: Record<string, string> };
 
+// Forms post their state as JSON in a hidden "data" field. Null when it isn't JSON.
+export function parseFormJson<S extends z.ZodType>(schema: S, formData: FormData) {
+  try {
+    return schema.safeParse(JSON.parse(String(formData.get("data") ?? "")));
+  } catch {
+    return null;
+  }
+}
+
 export function toActionError(error: z.ZodError): ActionState {
   const fieldErrors: Record<string, string> = {};
   for (const issue of error.issues) {

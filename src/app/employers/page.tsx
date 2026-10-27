@@ -32,8 +32,8 @@ export default function EmployerHome() {
 async function Jobs() {
   const user = await requireEmployer();
   const jobs = await listJobs(user.company.id);
-  // Catches companies whose vetting never ran (made before vetting existed, or the run was lost).
-  if (user.company.status === "pending") vetCompanySoon(user.company.id, user.company.domain);
+  // Catches verified companies whose vetting never ran (made before vetting existed, or the run was lost).
+  if (user.company.status === "pending" && user.company.verifiedAt) vetCompanySoon(user.company.id, user.company.domain);
 
   return (
     <>

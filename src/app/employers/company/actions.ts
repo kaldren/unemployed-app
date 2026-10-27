@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getMembership, requireEmployer, requireEmployerAccount, type CurrentEmployer } from "@/lib/auth";
-import { toActionError, type ActionState } from "@/lib/candidate/schemas";
+import { parseFormJson as parseData, toActionError, type ActionState } from "@/lib/candidate/schemas";
 import { canManageCompany, companyProfileSchema, emailSchema, inviteSchema, isEmailOnDomain, newCompanySchema } from "@/lib/employer/company";
 import {
   acceptInvite,
@@ -14,11 +14,11 @@ import {
   createInvite,
   createVerificationToken,
   deleteCompany,
+  isDomainVerified,
   removeMember,
   revokeInvite,
   updateCompanyProfile,
 } from "@/lib/employer/companies";
-import { vetCompanySoon } from "@/lib/employer/vetting";
 import { isEmailConfigured, sendEmail } from "@/lib/email/send";
 import { companyInviteEmail, domainVerificationEmail } from "@/lib/email/templates";
 import { COMPANY_PATH, HOME_PATH, NEW_COMPANY_PATH } from "@/lib/portal";
@@ -27,15 +27,6 @@ import { SITE_URL } from "@/lib/site";
 const GENERIC_ERROR = "Something went wrong. Please try again.";
 const NOT_ALLOWED = "Only owners and admins can do that.";
 const ONE_COMPANY = "You're already in a company. For now, each account hires for one company.";
-
-// Forms post their state as JSON in a hidden "data" field, like the job and profile forms.
-function parseData<S extends z.ZodType>(schema: S, formData: FormData) {
-  try {
-    return schema.safeParse(JSON.parse(String(formData.get("data") ?? "")));
-  } catch {
-    return null;
-  }
-}
 
 // For actions only owners and admins may take. Recruiters get an error (or nothing, for plain forms).
 async function requireManager(): Promise<CurrentEmployer | null> {
@@ -54,9 +45,12 @@ export async function createCompanyAction(_prev: ActionState, formData: FormData
   const parsed = parseData(newCompanySchema, formData);
   if (!parsed) return { status: "error", message: GENERIC_ERROR };
   if (!parsed.success) return toActionError(parsed.error);
+  if (await isDomainVerified(parsed.data.domain)) {
+    const message = "Another company already verified this domain. If that's a mistake, contact us.";
+    return { status: "error", message, fieldErrors: { domain: message } };
+  }
 
-  const companyId = await createCompany(user.id, parsed.data);
-  vetCompanySoon(companyId, parsed.data.domain);
+  await createCompany(user.id, parsed.data);
   revalidateCompany();
   redirect(COMPANY_PATH);
 }

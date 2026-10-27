@@ -10,10 +10,11 @@ test.afterAll(async () => {
   await resetEmployers();
 });
 
-async function companyId() {
-  const { data, error } = await admin().from("companies").select("id").eq("domain", EMPLOYER_DOMAIN).single();
+// The company `userId` belongs to (another company may claim the same domain).
+async function companyId(userId: string) {
+  const { data, error } = await admin().from("company_members").select("company_id").eq("profile_id", userId).single();
   if (error) throw error;
-  return data.id as string;
+  return data.company_id as string;
 }
 
 // The link in the verification email, minted here since local email isn't delivered.
@@ -22,7 +23,7 @@ async function verificationLink(requestedBy: string) {
   const { error } = await admin()
     .from("company_domain_verifications")
     .insert({
-      company_id: await companyId(),
+      company_id: await companyId(requestedBy),
       email: OWNER.email,
       token_hash: createHash("sha256").update(token).digest("hex"),
       requested_by: requestedBy,
@@ -62,7 +63,7 @@ test("a new employer creates a company and verifies its domain before publishing
   // Unverified companies can't publish, even straight in the database.
   const { error } = await admin()
     .from("jobs")
-    .insert({ company_id: await companyId(), created_by: ownerId, title: "Blocked", status: "open" });
+    .insert({ company_id: await companyId(ownerId!), created_by: ownerId, title: "Blocked", status: "open" });
   expect(error?.message).toContain("Only verified companies can publish jobs");
   await page.goto("/employers");
   await expect(page.getByText(`Verify ${EMPLOYER_DOMAIN} to publish jobs.`)).toBeVisible();
@@ -84,9 +85,25 @@ test("a new employer creates a company and verifies its domain before publishing
   await expect(page.getByText("Verified", { exact: true })).toBeVisible();
   expect(await membership(ownerId!)).toMatchObject({ companies: { verified_at: expect.any(String) } });
 
-  // Links work once.
+  // Links work once, but a spent link (e.g. opened first by a mail scanner) on a verified company says so.
   await page.goto(link);
-  await expect(page.getByRole("alert").filter({ hasText: "expired or was already used" })).toBeVisible();
+  await expect(page).toHaveURL("/employers/company?verify=invalid");
+  await expect(page.getByRole("alert").filter({ hasText: "Domain verified" })).toBeVisible();
+  await page.goto("/auth/verify-domain?token=not-a-real-token");
+  await expect(page).toHaveURL("/employers/company?verify=invalid");
+});
+
+test("a domain another company already verified can't be verified again", async ({ page }) => {
+  const [ownerId] = await resetEmployers({ verified: false });
+  // The other company proved the domain after this one claimed it.
+  const { error } = await admin()
+    .from("companies")
+    .insert({ domain: EMPLOYER_DOMAIN, name: "Other", verified_at: new Date().toISOString() });
+  if (error) throw error;
+  await openEmployerMagicLink(page, OWNER.email);
+  await page.goto(await verificationLink(ownerId!));
+  await expect(page.getByRole("alert").filter({ hasText: "Another company already verified this domain" })).toBeVisible();
+  await expect(page.getByText("Unverified")).toBeVisible();
 });
 
 test("owners invite teammates, who join and get their role changed or removed", async ({ page, browser }) => {

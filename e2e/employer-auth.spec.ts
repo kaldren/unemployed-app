@@ -42,6 +42,14 @@ test.describe("signed out", () => {
     }).toPass();
     await submit.click();
     await expect(page.getByRole("alert").filter({ hasText: /Wrong email or password/ })).toBeVisible();
+
+    // A sent reset link doesn't stick: asking again shows the form.
+    await page.getByRole("button", { name: "Forgot password?" }).click();
+    await page.getByRole("button", { name: "Email me a reset link" }).click();
+    await expect(page.getByText(/we sent it a link to reset the password/)).toBeVisible();
+    await page.getByRole("button", { name: "Back to sign in" }).click();
+    await page.getByRole("button", { name: "Forgot password?" }).click();
+    await expect(page.getByRole("button", { name: "Email me a reset link" })).toBeVisible();
   });
 
   test("cancelled Google consent returns to the employer sign-in", async ({ page }) => {

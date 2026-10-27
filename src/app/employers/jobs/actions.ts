@@ -8,7 +8,7 @@ import { db } from "@/db";
 import { jobs, jobSkills } from "@/db/schema";
 import { requireEmployer } from "@/lib/auth";
 import { ensureSkills, type Tx } from "@/lib/candidate/catalog";
-import { toActionError, type ActionState } from "@/lib/candidate/schemas";
+import { parseFormJson as parseData, toActionError, type ActionState } from "@/lib/candidate/schemas";
 import { normalizeSlug } from "@/lib/candidate/slug";
 import { isAiConfigured, writeJobDraft } from "@/lib/jobs/draft";
 import { keepChosenRoleType, type DraftRequest } from "@/lib/jobs/prompt";
@@ -19,15 +19,6 @@ const GENERIC_ERROR = "Something went wrong. Please try again.";
 const JOB_GONE = "This job no longer exists.";
 const AI_UNAVAILABLE = "AI drafting isn't available right now. Write the post yourself for now.";
 const AI_FAILED = "The AI couldn't write a draft this time. Try again, or write it yourself.";
-
-// Forms post their state as JSON in a hidden "data" field.
-function parseData<S extends z.ZodType>(schema: S, formData: FormData) {
-  try {
-    return schema.safeParse(JSON.parse(String(formData.get("data") ?? "")));
-  } catch {
-    return null;
-  }
-}
 
 async function draftOrError(request: DraftRequest): Promise<JobDraft | ActionState> {
   if (!isAiConfigured()) return { status: "error", message: AI_UNAVAILABLE };

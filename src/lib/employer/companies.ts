@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { and, asc, desc, eq, gt, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   companies,
@@ -12,9 +12,12 @@ import {
 } from "@/db/schema";
 import type { AssignableRole } from "./company";
 
-// Postgres unique_violation, e.g. a second company verifying the same domain.
-const isUniqueViolation = (error: unknown) =>
-  typeof error === "object" && error !== null && "code" in error && (error as { code: unknown }).code === "23505";
+// Postgres unique_violation, e.g. a second company verifying the same domain. Drizzle wraps the
+// driver's error (DrizzleQueryError), so the code is on `cause`.
+const isUniqueViolation = (error: unknown): boolean =>
+  typeof error === "object" &&
+  error !== null &&
+  ((error as { code?: unknown }).code === "23505" || isUniqueViolation((error as { cause?: unknown }).cause));
 
 export type CompanyProfileValues = Pick<Company, "name" | "website" | "logoUrl" | "description">;
 
@@ -33,6 +36,16 @@ export async function getCompany(companyId: string) {
     .from(companies)
     .where(eq(companies.id, companyId));
   return company ?? null;
+}
+
+// Whether some company already proved `domain`; then no other company can verify it.
+export async function isDomainVerified(domain: string) {
+  const [row] = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.domain, domain), isNotNull(companies.verifiedAt)))
+    .limit(1);
+  return Boolean(row);
 }
 
 // Creates the company with `userId` as its owner. Returns its id.
@@ -179,24 +192,28 @@ export async function createVerificationToken(companyId: string, requestedBy: st
 
 export type VerifyResult = "verified" | "invalid" | "taken";
 
-// Spends the token: an unexpired one marks its company verified. Every link for that company is then void.
-export async function verifyDomainToken(token: string): Promise<VerifyResult> {
+// Spends the token: an unexpired one marks its company verified (and returns it). Every link for that
+// company is then void.
+export async function verifyDomainToken(
+  token: string,
+): Promise<{ result: VerifyResult; company?: { id: string; domain: string } }> {
   try {
     return await db.transaction(async (tx) => {
       const [row] = await tx
         .delete(companyDomainVerifications)
         .where(eq(companyDomainVerifications.tokenHash, hashToken(token)))
         .returning({ companyId: companyDomainVerifications.companyId, expiresAt: companyDomainVerifications.expiresAt });
-      if (!row || row.expiresAt.getTime() < Date.now()) return "invalid";
-      await tx
+      if (!row || row.expiresAt.getTime() < Date.now()) return { result: "invalid" as const };
+      const [company] = await tx
         .update(companies)
         .set({ verifiedAt: sql`coalesce(${companies.verifiedAt}, now())` })
-        .where(eq(companies.id, row.companyId));
+        .where(eq(companies.id, row.companyId))
+        .returning({ id: companies.id, domain: companies.domain });
       await tx.delete(companyDomainVerifications).where(eq(companyDomainVerifications.companyId, row.companyId));
-      return "verified";
+      return { result: "verified" as const, company };
     });
   } catch (error) {
-    if (isUniqueViolation(error)) return "taken";
+    if (isUniqueViolation(error)) return { result: "taken" };
     throw error;
   }
 }
