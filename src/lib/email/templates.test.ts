@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { candidateMatchEmail, digestEmail, employerMatchEmail } from "./templates";
+import { candidateMatchEmail, companyInviteEmail, digestEmail, domainVerificationEmail, employerMatchEmail } from "./templates";
 
 describe("match emails", () => {
   it("tell each side who they matched and link to their matches", () => {
@@ -24,5 +24,20 @@ describe("digestEmail", () => {
     expect(digestEmail({ count: 1 }).subject).toBe("1 new job matched to you");
     expect(digestEmail({ count: 3 }).text).toContain("3 new jobs on Unemployed fit your profile.");
     expect(digestEmail({ count: 3 }).text).toContain("Turn it off in your profile");
+  });
+});
+
+describe("company emails", () => {
+  it("invite names the company and sends the invitee to accept it", () => {
+    const email = companyInviteEmail({ companyName: "Acme", inviterName: "Ana" });
+    expect(email.subject).toBe("Join Acme on Unemployed");
+    expect(email.text).toContain("Ana invited you to hire with Acme");
+    expect(email.text).toContain("http://localhost:3000/employers/login?next=/employers/company/new");
+  });
+
+  it("verification link carries the token", () => {
+    const email = domainVerificationEmail({ companyName: "Acme", domain: "acme.com", token: "abc_-1" });
+    expect(email.subject).toBe("Confirm acme.com for Acme");
+    expect(email.text).toContain("http://localhost:3000/auth/verify-domain?token=abc_-1");
   });
 });

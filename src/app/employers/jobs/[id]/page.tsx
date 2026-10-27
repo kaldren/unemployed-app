@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
-import { requireEmployer } from "@/lib/auth";
+import { canHire, requireEmployer } from "@/lib/auth";
 import { getCatalogNames } from "@/lib/candidate/catalog";
 import { DEFAULT_CURRENCY } from "@/lib/candidate/schemas";
 import { isAiConfigured } from "@/lib/jobs/draft";
@@ -46,7 +46,8 @@ async function Job({ params }: Pick<PageProps<"/employers/jobs/[id]">, "params">
           <JobEditor
             action={saveJob.bind(null, job.id)}
             aiEnabled={isAiConfigured()}
-            companyApproved={user.company.status === "approved"}
+            companyVerified={user.company.verifiedAt !== null}
+            companyApproved={canHire(user.company)}
             skillSuggestions={catalog.skills}
             initial={{
               title: job.title,

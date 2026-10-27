@@ -1,11 +1,11 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { db } from "@/db";
-import { companies, companyMembers, profiles, type Company, type Profile } from "@/db/schema";
-import { HOME_PATH } from "@/lib/portal";
+import { companies, companyMembers, profiles, type Company, type CompanyRole, type Profile } from "@/db/schema";
+import { HOME_PATH, NEW_COMPANY_PATH } from "@/lib/portal";
 import { createClient } from "@/lib/supabase/server";
 
 export type CurrentUser = Pick<Profile, "id" | "type" | "fullName" | "email" | "avatarUrl">;
@@ -54,29 +54,50 @@ export async function requireCandidate(): Promise<CurrentUser> {
 }
 
 export type CurrentEmployer = CurrentUser & {
-  company: Pick<Company, "id" | "name" | "domain" | "status">;
-  role: "owner" | "member";
+  company: Pick<Company, "id" | "name" | "domain" | "status" | "verifiedAt">;
+  role: CompanyRole;
 };
 
-// getCurrentUser for employer-only pages and actions, with the employer's company; anyone else goes home.
-export const requireEmployer = cache(async (): Promise<CurrentEmployer> => {
+// getCurrentUser for employer pages that work without a company (create one, accept an invite, password).
+export async function requireEmployerAccount(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (user.type !== "employer") redirect("/");
+  return user;
+}
 
+// The company an employer works in: their oldest membership (the app shows one company per employer).
+export async function getMembership(userId: string) {
   const [membership] = await db
     .select({
       role: companyMembers.role,
-      company: { id: companies.id, name: companies.name, domain: companies.domain, status: companies.status },
+      company: {
+        id: companies.id,
+        name: companies.name,
+        domain: companies.domain,
+        status: companies.status,
+        verifiedAt: companies.verifiedAt,
+      },
     })
     .from(companyMembers)
     .innerJoin(companies, eq(companies.id, companyMembers.companyId))
-    .where(eq(companyMembers.profileId, user.id));
+    .where(eq(companyMembers.profileId, userId))
+    .orderBy(asc(companyMembers.createdAt))
+    .limit(1);
+  return membership ?? null;
+}
 
-  // Created in the same transaction as the profile, so this is only a safety net.
-  if (!membership) redirect("/auth/signout?portal=employer");
-
+// getCurrentUser for employer-only pages and actions, with the employer's company; anyone else goes home,
+// and an employer without a company goes to create one (or accept an invite).
+export const requireEmployer = cache(async (): Promise<CurrentEmployer> => {
+  const user = await requireEmployerAccount();
+  const membership = await getMembership(user.id);
+  if (!membership) redirect(NEW_COMPANY_PATH);
   return { ...user, ...membership };
 });
+
+// Candidates see a company's jobs once it has proved its domain and passed vetting.
+export const canHire = (company: Pick<Company, "status" | "verifiedAt">) =>
+  company.status === "approved" && company.verifiedAt !== null;
 
 // Admins are listed by user id in ADMIN_USER_IDS (comma-separated).
 export function isAdmin(userId: string) {

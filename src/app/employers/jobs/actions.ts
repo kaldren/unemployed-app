@@ -98,6 +98,11 @@ export async function saveJob(jobId: string, _prev: ActionState, formData: FormD
   if (!parsed) return { status: "error", message: GENERIC_ERROR };
   if (!parsed.success) return toActionError(parsed.error);
   const { skills, ...values } = parsed.data;
+  // The database enforces this too (jobs_require_verified_company trigger).
+  if (values.status === "open" && !user.company.verifiedAt) {
+    const message = "Verify your company's domain to publish. Go to Company to send the link.";
+    return { status: "error", message, fieldErrors: { status: message } };
+  }
 
   const saved = await db.transaction(async (tx) => {
     const [job] = await tx

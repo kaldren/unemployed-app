@@ -34,14 +34,19 @@ const userId = user.id;
 check(
   await supabase.from("profiles").upsert({ id: userId, type: "employer", email: DEMO.email, full_name: DEMO.fullName }),
 );
+// Domains are unique only once verified, so find the demo company before creating it.
+const { data: existing } = check(await supabase.from("companies").select("id").eq("domain", COMPANY.domain).maybeSingle());
+const values = { ...COMPANY, status: "approved", verified_at: new Date().toISOString() };
 const { data: company } = check(
-  await supabase
-    .from("companies")
-    .upsert({ ...COMPANY, status: "approved" }, { onConflict: "domain" })
-    .select("id")
-    .single(),
+  existing
+    ? await supabase.from("companies").update(values).eq("id", (existing as { id: string }).id).select("id").single()
+    : await supabase.from("companies").insert(values).select("id").single(),
 );
-check(await supabase.from("company_members").upsert({ profile_id: userId, company_id: company!.id, role: "owner" }));
+check(
+  await supabase
+    .from("company_members")
+    .upsert({ profile_id: userId, company_id: (company as { id: string }).id, role: "owner" }, { onConflict: "company_id,profile_id" }),
+);
 
 const signIn = new URL("/auth/callback", process.argv[2] ?? "http://localhost:3000");
 signIn.searchParams.set("portal", "employer");

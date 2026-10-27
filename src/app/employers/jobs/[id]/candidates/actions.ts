@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { requireEmployer } from "@/lib/auth";
+import { canHire, requireEmployer } from "@/lib/auth";
 import { notifyMatchSoon } from "@/lib/email/notify";
 import { getJob } from "@/lib/jobs/queries";
 import { canCompanySee, recordEmployerSwipe } from "@/lib/matching/queries";
@@ -14,7 +14,7 @@ export async function swipeCandidate(jobId: string, candidateId: string, liked: 
   const user = await requireEmployer();
   const parsed = swipeSchema.safeParse({ jobId, candidateId, liked });
   if (!parsed.success) return { status: "error", message: SWIPE_ERROR };
-  if (user.company.status !== "approved") {
+  if (!canHire(user.company)) {
     return { status: "error", message: "You can review candidates once your company is verified." };
   }
 

@@ -7,7 +7,7 @@ test.skip(!hasServiceRoleKey, "Set SUPABASE_SERVICE_ROLE_KEY in .env.local to ru
 
 // Leave no verified company or open job behind for the other specs.
 test.afterEach(async () => {
-  await resetEmployers();
+  await resetEmployers({ withCompany: false });
 });
 
 test("a like from both sides is a match, and both can get in touch", async ({ browser }) => {

@@ -48,3 +48,26 @@ export function digestEmail({ count }: { count: number }): Email {
     footer: "You get this at most once a day when there are new matches. Turn it off in your profile, under Account.",
   });
 }
+
+export function companyInviteEmail({ companyName, inviterName }: { companyName: string; inviterName: string | null }): Email {
+  return compose({
+    subject: `Join ${companyName} on ${SITE_NAME}`,
+    lines: [
+      `${inviterName || "A teammate"} invited you to hire with ${companyName} on ${SITE_NAME}.`,
+      "Sign in or create an account with this email address, then accept the invite.",
+    ],
+    action: { label: "Accept the invite", path: "/employers/login?next=/employers/company/new" },
+  });
+}
+
+export function domainVerificationEmail({ companyName, domain, token }: { companyName: string; domain: string; token: string }): Email {
+  return compose({
+    subject: `Confirm ${domain} for ${companyName}`,
+    lines: [
+      `Someone on ${SITE_NAME} asked to verify ${companyName} with this address on ${domain}.`,
+      "Confirm it to let the company publish jobs. The link works once, for 24 hours.",
+    ],
+    action: { label: `Verify ${domain}`, path: `/auth/verify-domain?token=${encodeURIComponent(token)}` },
+    footer: "Didn't expect this? Ignore this email and nothing changes.",
+  });
+}

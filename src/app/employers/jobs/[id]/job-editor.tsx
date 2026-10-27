@@ -34,12 +34,14 @@ export function JobEditor({
   action,
   initial,
   aiEnabled,
+  companyVerified,
   companyApproved,
   skillSuggestions,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   initial: JobState;
   aiEnabled: boolean;
+  companyVerified: boolean;
   companyApproved: boolean;
   skillSuggestions: string[];
 }) {
@@ -134,7 +136,9 @@ export function JobEditor({
           onChange={(status) => update({ status: status as JobStatus })}
           hint={
             job.status === "draft"
-              ? "Only your team can see drafts."
+              ? companyVerified
+                ? "Only your team can see drafts."
+                : "Only your team can see drafts. Verify your company's domain to publish."
               : companyApproved
                 ? "Candidates can see this job."
                 : "Candidates will see this job once we've verified your company."

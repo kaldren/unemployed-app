@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { safeNextPath } from "@/lib/auth";
 import { authErrorMessage, HOME_PATH, LOGIN_PATH } from "@/lib/portal";
 import { SITE_NAME } from "@/lib/site";
-import { EmailForm } from "./email-form";
+import { PasswordForm } from "./password-form";
 
 export const metadata: Metadata = {
   title: "Employer sign in",
@@ -21,7 +21,7 @@ export default function EmployerLoginPage({ searchParams }: PageProps<"/employer
         <div className="flex w-full max-w-sm flex-col gap-10 text-center">
           <div className="flex flex-col gap-3">
             <h1 className="text-4xl font-semibold tracking-tight">{SITE_NAME} for employers</h1>
-            <p className="text-base text-muted-foreground">Sign in with your work email to hire.</p>
+            <p className="text-base text-muted-foreground">Sign in or create an account to hire.</p>
           </div>
           {/* searchParams are request data, so they stream in behind a boundary. */}
           <Suspense fallback={<SignInOptions disabled />}>
@@ -48,8 +48,9 @@ function SignInOptions({ next, message, disabled }: { next?: string; message?: s
   return (
     <div className="flex flex-col gap-6">
       {message && <Alert variant="destructive">{message}</Alert>}
-      <EmailForm next={next} disabled={disabled} />
       <GoogleButton portal="employer" next={next} disabled={disabled} />
+      <p className="text-sm text-muted-foreground">or use your email</p>
+      <PasswordForm next={next} disabled={disabled} />
     </div>
   );
 }
