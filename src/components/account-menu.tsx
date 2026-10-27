@@ -3,7 +3,6 @@
 import { ChevronDown, LogOut, Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTransition } from "react";
 import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +19,6 @@ import { SETTINGS_PATH } from "@/lib/portal";
 
 // The header's account button: the user's picture and name, opening Settings and Sign out.
 export function AccountMenu({ user }: { user: CurrentUser }) {
-  const [signingOut, startSignOut] = useTransition();
   const name = displayName(user);
   return (
     <DropdownMenu>
@@ -52,9 +50,9 @@ export function AccountMenu({ user }: { user: CurrentUser }) {
             Settings
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem disabled={signingOut} onSelect={() => startSignOut(() => signOut())}>
+        <DropdownMenuItem onSelect={() => void signOut()}>
           <LogOut aria-hidden />
-          {signingOut ? "Signing out…" : "Sign out"}
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -20,6 +20,12 @@ export function splitFullName(fullName: string | null | undefined): { firstName:
 
 export const joinName = ({ firstName, lastName }: Name) => `${firstName} ${lastName}`;
 
+// The user's name as the name form starts with it: the stored parts, else what full_name gives.
+export function nameOf(user: Omit<Named, "email">): Name {
+  const split = splitFullName(user.fullName);
+  return { firstName: user.firstName ?? split.firstName ?? "", lastName: user.lastName ?? split.lastName ?? "" };
+}
+
 export const hasName = (user: Pick<Named, "firstName" | "lastName">) => Boolean(user.firstName && user.lastName);
 
 // What to call the user: their first name, or what's known of it.

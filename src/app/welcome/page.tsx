@@ -8,7 +8,7 @@ import { SparkText } from "@/components/brand";
 import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, type CurrentUser } from "@/lib/auth";
-import { firstNameOf, hasName, splitFullName } from "@/lib/name";
+import { firstNameOf, hasName, nameOf } from "@/lib/name";
 
 export const metadata: Metadata = {
   title: "Welcome",
@@ -72,20 +72,25 @@ async function Welcome() {
             </li>
           ))}
         </ul>
-        <form action={signOut} className="text-center text-sm text-muted-foreground">
-          Not {user.email}?{" "}
-          <Button type="submit" variant="link" size="sm" className="h-auto px-0">
-            Sign out
-          </Button>
-        </form>
+        <SignOutLink email={user.email} />
       </div>
     </main>
   );
 }
 
+function SignOutLink({ email }: { email: string }) {
+  return (
+    <form action={signOut} className="text-center text-sm text-muted-foreground">
+      Not {email}?{" "}
+      <Button type="submit" variant="link" size="sm" className="h-auto px-0">
+        Sign out
+      </Button>
+    </form>
+  );
+}
+
 // Accounts from Google without a name (or from before names were asked) give it first.
 function AskName({ user }: { user: CurrentUser }) {
-  const split = splitFullName(user.fullName);
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
       <div className="flex w-full max-w-sm flex-col gap-8">
@@ -96,7 +101,8 @@ function AskName({ user }: { user: CurrentUser }) {
           </h1>
           <p className="text-base text-muted-foreground">Companies and teammates see it.</p>
         </div>
-        <NameStep initial={{ firstName: user.firstName ?? split.firstName ?? "", lastName: user.lastName ?? split.lastName ?? "" }} />
+        <NameStep initial={nameOf(user)} />
+        <SignOutLink email={user.email} />
       </div>
     </main>
   );

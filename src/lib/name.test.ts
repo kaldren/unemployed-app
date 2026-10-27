@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayName, firstNameOf, hasName, initials, nameSchema, splitFullName } from "./name";
+import { displayName, firstNameOf, hasName, initials, nameOf, nameSchema, splitFullName } from "./name";
 
 describe("splitFullName", () => {
   it("takes the first word as first name and the rest as last name", () => {
@@ -43,5 +43,12 @@ describe("display helpers", () => {
   it("needs both parts to count as named", () => {
     expect(hasName({ firstName: "Ana", lastName: null })).toBe(false);
     expect(hasName({ firstName: "Ana", lastName: "Petrova" })).toBe(true);
+  });
+});
+
+describe("nameOf", () => {
+  it("prefers stored parts, then splits full name", () => {
+    expect(nameOf({ firstName: "Ana", lastName: null, fullName: "X Y Z" })).toEqual({ firstName: "Ana", lastName: "Y Z" });
+    expect(nameOf({ fullName: null })).toEqual({ firstName: "", lastName: "" });
   });
 });

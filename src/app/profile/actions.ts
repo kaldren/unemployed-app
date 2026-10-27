@@ -39,6 +39,7 @@ import {
 } from "@/lib/candidate/schemas";
 import { normalizeSlug } from "@/lib/candidate/slug";
 import { matchAfterChange } from "@/lib/matching/run";
+import { splitFullName } from "@/lib/name";
 import { extractResume, ResumeExtractionError } from "@/lib/resume/extract";
 import { createClient } from "@/lib/supabase/server";
 
@@ -246,7 +247,11 @@ export async function importResume(_prev: ActionState, formData: FormData): Prom
       await replaceRoles(tx, user.id, extracted.suggestedRoles.slice(0, MAX_ROLES));
     }
     if (!user.fullName && extracted.fullName) {
-      await tx.update(profiles).set({ fullName: extracted.fullName }).where(eq(profiles.id, user.id));
+      const { firstName, lastName } = splitFullName(extracted.fullName);
+      await tx
+        .update(profiles)
+        .set({ fullName: extracted.fullName, firstName: user.firstName ?? firstName, lastName: user.lastName ?? lastName })
+        .where(eq(profiles.id, user.id));
     }
   });
 

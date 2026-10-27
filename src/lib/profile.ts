@@ -12,14 +12,18 @@ export async function ensureProfile(user: User) {
   const meta = user.user_metadata;
   const fullName: string | null = meta.full_name ?? meta.name ?? null;
   // Email sign-up sends first_name/last_name; Google sends given_name/family_name.
-  const split = splitFullName(fullName);
+  // Structured parts come as a pair; mixing one with half of full_name could repeat a word.
+  const structured = meta.first_name || meta.given_name;
+  const split = structured
+    ? { firstName: meta.first_name ?? meta.given_name, lastName: meta.last_name ?? meta.family_name ?? null }
+    : splitFullName(fullName);
   await db
     .insert(profiles)
     .values({
       id: user.id,
       email: user.email,
-      firstName: meta.first_name ?? meta.given_name ?? split.firstName,
-      lastName: meta.last_name ?? meta.family_name ?? split.lastName,
+      firstName: split.firstName,
+      lastName: split.lastName,
       fullName,
       avatarUrl: meta.avatar_url ?? meta.picture ?? null,
     })

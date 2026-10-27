@@ -8,7 +8,7 @@ import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
-import { splitFullName } from "@/lib/name";
+import { nameOf } from "@/lib/name";
 import { PASSWORD_PATH } from "@/lib/portal";
 import { NameSection } from "./name-fields";
 
@@ -27,7 +27,6 @@ export default function SettingsPage() {
 
 async function Settings() {
   const user = await getCurrentUser();
-  const split = splitFullName(user.fullName);
   return (
     <>
       <AppHeader user={user} />
@@ -37,9 +36,7 @@ async function Settings() {
             <h1 className="text-4xl font-semibold tracking-tight">Settings</h1>
             <p className="text-base text-muted-foreground break-all">{user.email}</p>
           </div>
-          <NameSection
-            initial={{ firstName: user.firstName ?? split.firstName ?? "", lastName: user.lastName ?? split.lastName ?? "" }}
-          />
+          <NameSection initial={nameOf(user)} />
           <Card asChild>
             <section aria-labelledby="password-title">
               <CardHeader>
