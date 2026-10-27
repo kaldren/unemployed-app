@@ -60,3 +60,18 @@ Mailpit at http://127.0.0.1:55324. `pnpm db:use remote` switches to the hosted p
 and prints a one-time sign-in link for each account, also saved to `.seed-accounts.md`. Links expire
 after an hour; `pnpm seed` makes fresh ones without restarting. Google and LinkedIn sign-in aren't set
 up locally; use the seed links.
+
+## Employer sign-in setup (hosted)
+
+Local dev needs none of this (email/password works; Mailpit at http://127.0.0.1:55324 catches auth email).
+
+1. **Google Cloud** → APIs & Services → Credentials → OAuth client ID (Web). Authorized redirect URI:
+   `https://<project-ref>.supabase.co/auth/v1/callback`. Consent screen: app name, support email, your domain.
+2. **Supabase → Auth → Providers → Google**: enable, paste the client ID and secret.
+3. **Supabase → Auth → Providers → Email**: enable, "Confirm email" on, minimum password length 8.
+4. **Supabase → Auth → URL Configuration**: Site URL = production URL; redirect URLs =
+   `https://<prod-domain>/auth/callback` and `https://*-<team>.vercel.app/auth/callback` for previews.
+5. **Supabase → Auth → SMTP**: use Resend (the built-in sender is rate-limited and not for production).
+6. **Vercel env**: `RESEND_API_KEY`, `EMAIL_FROM`, `NEXT_PUBLIC_SITE_URL` (domain-verification and invite
+   emails are skipped without them).
+7. Run the migration on the hosted DB: `pnpm db:use remote && pnpm db:migrate`.
